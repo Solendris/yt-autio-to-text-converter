@@ -2,7 +2,7 @@ import time
 from flask import Blueprint, request, jsonify, send_file
 from app.config import Config
 from app.utils.logger import logger
-from app.services.youtube_service import get_transcript, extract_video_id
+from app.services.youtube_service import get_transcript, extract_video_id, get_video_title
 from app.services.summarization_service import summarize_with_perplexity, summarize_with_gemini
 from app.services.pdf_service import create_transcript_file, create_pdf_summary, create_hybrid_pdf
 from io import BytesIO
@@ -158,10 +158,14 @@ def summarize_transcript():
         
         logger.info(f"[OK] Summary generated ({len(summary)} characters)")
         
+        from app.services.youtube_service import get_video_title # Lazy import to avoid circular dependency if any
+        
         # Wyciągnij video_id jeśli dostępny
         if video_url:
             video_id = extract_video_id(video_url)
-            title = f'Video {video_id}'
+            # Try to fetch real title
+            real_title = get_video_title(video_url)
+            title = real_title if real_title else f'Video {video_id}'
         else:
             video_id = 'manual_upload'
             title = transcript_file.filename.replace('.txt', '') if transcript_file else 'Transcript Summary'

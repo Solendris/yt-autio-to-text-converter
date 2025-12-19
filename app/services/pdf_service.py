@@ -177,7 +177,7 @@ def create_pdf_summary(title, summary, video_url, transcript_source, summary_typ
     story.append(Paragraph(f"<b>Generated:</b> {now}", subtitle_style))
     story.append(Paragraph(f"<b>Transcript source:</b> {transcript_source.upper()}", subtitle_style))
     story.append(Paragraph(f"<b>Summary type:</b> {summary_type.upper()}", subtitle_style))
-    story.append(Paragraph(f"<b>Video URL:</b> {parse_markdown(video_url)}", subtitle_style))
+    story.append(Paragraph(f"<b>Video:</b> {title_safe}", subtitle_style))
     story.append(Spacer(1, 0.2*inch))
     
     story.append(Paragraph(f"<b>{title_safe}</b>", styles['Heading2']))

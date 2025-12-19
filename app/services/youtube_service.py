@@ -18,6 +18,16 @@ def extract_video_id(url):
             return match.group(1)
     return None
 
+def get_video_title(url):
+    try:
+        ydl_opts = {'quiet': True, 'skip_download': True}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            return info.get('title', None)
+    except Exception as e:
+        logger.error(f"Failed to fetch video title: {e}")
+        return None
+
 def get_youtube_transcript(video_id):
     try:
         logger.info(f"Attempting YouTube transcript API for: {video_id}")

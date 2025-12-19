@@ -13,22 +13,22 @@ def summarize_with_perplexity(text, summary_type="normal"):
             "Content-Type": "application/json"
         }
         
-        # Increase input limit (approx 25k-30k tokens for 100k chars)
-        text_to_summarize = text[:100000] if len(text) > 100000 else text
+        # Revert to safe input limit (approx 5k tokens) to avoid timeouts
+        text_to_summarize = text[:20000] if len(text) > 20000 else text
         
         prompts = {
             "concise": "Jesteś ekspertem od syntezy informacji. Przeanalizuj poniższy transkrypt wideo YouTube. Stwórz **bardzo krótkie podsumowanie** (3-5 zdań). Skup się wyłącznie na **głównym wniosku** i najważniejszych faktach. Pomiń wstęp i zakończenie. Użyj **pogrubienia** dla kluczowych terminów.",
             "normal": "Jesteś profesjonalnym asystentem. Przeanalizuj transkrypt wideo. Stwórz przejrzyste podsumowanie (ok. 300-500 słów) w języku polskim. Struktura: 1. **Główny temat:** O czym jest wideo? (1-2 zdania). 2. **Kluczowe punkty:** Lista punktowana (użyj myślników `-`). Każdy punkt powinien zawierać konkretną informację, a nie ogólnik. 3. **Wnioski / Actionable Advice:** Co z tego wynika dla widza? **Formatowanie:** Używaj **pogrubień** dla ważnych pojęć. Pisz stylem edukacyjnym i bezpośrednim.",
-            "detailed": "Działasz jako zaawansowany analityk treści edukacyjnych. Przeanalizuj CAŁY dostarczony transkrypt wideo i przygotuj **kompleksowe opracowanie** (1500-2500 słów) w języku polskim. **Wymagana struktura:** ### 1. Wprowadzenie (Kontekst wideo i definicja problemu). ### 2. Szczegółowa Analiza (podzielona na sekcje tematyczne). Nie streszczaj chronologicznie, ale **tematycznie**. Wyodrębnij główne wątki jako nagłówki. Dla każdego wątku opisz szczegóły, dane, przykłady i argumenty autora. Używaj **pogrubień** dla terminologii. ### 3. Cytaty i Kluczowe Myśli (Przytocz lub sparafrazuj najważniejsze stwierdzenia). ### 4. Podsumowanie i Wnioski Praktyczne (Synteza wiedzy, lista kroków/lekcji). **Styl:** Profesjonalny, akademicki lub ekspercki. Używaj poprawnego formatowania Markdown (nagłówki, listy, pogrubienia). Twoim celem jest to, aby użytkownik nie musiał oglądać wideo po przeczytaniu tej notatki.",
+            "detailed": "Działasz jako zaawansowany analityk treści edukacyjnych. Przeanalizuj CAŁY dostarczony transkrypt wideo i przygotuj **kompleksowe opracowanie** (ok. 800-1000 słów) w języku polskim. **Wymagana struktura:** ### 1. Wprowadzenie (Kontekst wideo i definicja problemu). ### 2. Szczegółowa Analiza (podzielona na sekcje tematyczne). Nie streszczaj chronologicznie, ale **tematycznie**. Wyodrębnij główne wątki jako nagłówki. Dla każdego wątku opisz szczegóły, dane, przykłady i argumenty autora. Używaj **pogrubień** dla terminologii. ### 3. Cytaty i Kluczowe Myśli (Przytocz lub sparafrazuj najważniejsze stwierdzenia). ### 4. Podsumowanie i Wnioski Praktyczne (Synteza wiedzy, lista kroków/lekcji). **Styl:** Profesjonalny, akademicki lub ekspercki. Używaj poprawnego formatowania Markdown (nagłówki, listy, pogrubienia).",
         }
         
         prompt = prompts.get(summary_type, prompts["normal"])
         
-        # Adjust max_tokens based on summary type
+        # Revert max_tokens to safe values
         max_tokens_map = {
             "concise": 1000,
             "normal": 3000,
-            "detailed": 8000
+            "detailed": 4000
         }
         
         payload = {
@@ -47,7 +47,7 @@ def summarize_with_perplexity(text, summary_type="normal"):
             "temperature": 0.7
         }
         
-        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response = requests.post(url, headers=headers, json=payload, timeout=120)
         response.raise_for_status()
         
         result = response.json()
@@ -67,12 +67,12 @@ def summarize_with_gemini(text, summary_type="normal"):
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={Config.GOOGLE_API_KEY}"
         headers = {"Content-Type": "application/json"}
         
-        text_to_summarize = text[:100000] if len(text) > 100000 else text
+        text_to_summarize = text[:20000] if len(text) > 20000 else text
         
         prompts = {
             "concise": "Jesteś ekspertem od syntezy informacji. Przeanalizuj poniższy transkrypt wideo YouTube. Stwórz **bardzo krótkie podsumowanie** (3-5 zdań). Skup się wyłącznie na **głównym wniosku** i najważniejszych faktach. Pomiń wstęp i zakończenie. Użyj **pogrubienia** dla kluczowych terminów.",
             "normal": "Jesteś profesjonalnym asystentem. Przeanalizuj transkrypt wideo. Stwórz przejrzyste podsumowanie (ok. 300-500 słów) w języku polskim. Struktura: 1. **Główny temat:** O czym jest wideo? (1-2 zdania). 2. **Kluczowe punkty:** Lista punktowana (użyj myślników `-`). Każdy punkt powinien zawierać konkretną informację, a nie ogólnik. 3. **Wnioski / Actionable Advice:** Co z tego wynika dla widza? **Formatowanie:** Używaj **pogrubień** dla ważnych pojęć. Pisz stylem edukacyjnym i bezpośrednim.",
-            "detailed": "Działasz jako zaawansowany analityk treści edukacyjnych. Przeanalizuj CAŁY dostarczony transkrypt wideo i przygotuj **kompleksowe opracowanie** (1500-2500 słów) w języku polskim. **Wymagana struktura:** ### 1. Wprowadzenie (Kontekst wideo i definicja problemu). ### 2. Szczegółowa Analiza (podzielona na sekcje tematyczne). Nie streszczaj chronologicznie, ale **tematycznie**. Wyodrębnij główne wątki jako nagłówki. Dla każdego wątku opisz szczegóły, dane, przykłady i argumenty autora. Używaj **pogrubień** dla terminologii. ### 3. Cytaty i Kluczowe Myśli (Przytocz lub sparafrazuj najważniejsze stwierdzenia). ### 4. Podsumowanie i Wnioski Praktyczne (Synteza wiedzy, lista kroków/lekcji). **Styl:** Profesjonalny, akademicki lub ekspercki. Używaj poprawnego formatowania Markdown (nagłówki, listy, pogrubienia). Twoim celem jest to, aby użytkownik nie musiał oglądać wideo po przeczytaniu tej notatki.",
+            "detailed": "Działasz jako zaawansowany analityk treści edukacyjnych. Przeanalizuj CAŁY dostarczony transkrypt wideo i przygotuj **kompleksowe opracowanie** (ok. 800-1000 słów) w języku polskim. **Wymagana struktura:** ### 1. Wprowadzenie (Kontekst wideo i definicja problemu). ### 2. Szczegółowa Analiza (podzielona na sekcje tematyczne). Nie streszczaj chronologicznie, ale **tematycznie**. Wyodrębnij główne wątki jako nagłówki. Dla każdego wątku opisz szczegóły, dane, przykłady i argumenty autora. Używaj **pogrubień** dla terminologii. ### 3. Cytaty i Kluczowe Myśli (Przytocz lub sparafrazuj najważniejsze stwierdzenia). ### 4. Podsumowanie i Wnioski Praktyczne (Synteza wiedzy, lista kroków/lekcji). **Styl:** Profesjonalny, akademicki lub ekspercki. Używaj poprawnego formatowania Markdown (nagłówki, listy, pogrubienia).",
         }
         
         prompt = prompts.get(summary_type, prompts["normal"])
@@ -81,7 +81,7 @@ def summarize_with_gemini(text, summary_type="normal"):
         max_tokens_map = {
             "concise": 1000,
             "normal": 3000,
-            "detailed": 8000
+            "detailed": 4000
         }
         
         payload = {
@@ -96,7 +96,7 @@ def summarize_with_gemini(text, summary_type="normal"):
             }
         }
         
-        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response = requests.post(url, headers=headers, json=payload, timeout=120)
         response.raise_for_status()
         
         result = response.json()
