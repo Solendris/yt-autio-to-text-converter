@@ -463,3 +463,14 @@ If you are sure that the described cause is not responsible for this error and t
 [2025-12-19 15:25:40] [INFO]   - POST /api/transcript
 [2025-12-19 15:25:40] [INFO]   - POST /api/summarize
 [2025-12-19 15:25:40] [INFO]   - POST /api/hybrid
+[2025-12-19 15:41:00] [INFO] Attempting download from https://github.com/google/fonts/raw/main/ofl/lato/Lato-Regular.ttf...
+[2025-12-19 15:41:01] [INFO] Font downloaded successfully to C:\ZOSTAWIC\W poszukiwaniu zatrudnienia\Portfolio\yt-autio-to-text-converter\local\app\static\fonts\Lato-Regular.ttf
+[2025-12-19 15:41:01] [INFO] Attempting download from https://github.com/google/fonts/raw/main/ofl/lato/Lato-Bold.ttf...
+[2025-12-19 15:41:01] [INFO] Font downloaded successfully to C:\ZOSTAWIC\W poszukiwaniu zatrudnienia\Portfolio\yt-autio-to-text-converter\local\app\static\fonts\Lato-Bold.ttf
+[2025-12-19 15:41:01] [INFO] Registered fonts: Lato-Regular
+[2025-12-19 15:41:01] [INFO] Starting Flask server v4.0 (Refactored)...
+[2025-12-19 15:41:01] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-19 15:41:01] [INFO] Endpoints:
+[2025-12-19 15:41:01] [INFO]   - POST /api/transcript
+[2025-12-19 15:41:01] [INFO]   - POST /api/summarize
+[2025-12-19 15:41:01] [INFO]   - POST /api/hybrid
