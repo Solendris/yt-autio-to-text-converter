@@ -122,26 +122,21 @@ def parse_markdown(text):
 
     return text
 
-def create_pdf_summary(title, summary, video_url, transcript_source, summary_type):
-    """Create PDF summary with Polish character support and Markdown parsing."""
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
-    
+def _get_pdf_styles(title_size=24, subtitle_size=10, body_size=10):
+    """Helper to generate common PDF styles."""
     styles = getSampleStyleSheet()
     
-    # Update styles to use our font
-    styles['Normal'].fontName = MAIN_FONT
-    styles['Heading1'].fontName = MAIN_FONT
-    styles['Heading2'].fontName = MAIN_FONT
-    styles['Heading3'].fontName = MAIN_FONT
-    styles['BodyText'].fontName = MAIN_FONT
-    
+    # Update standard styles to use our font
+    for style_name in ['Normal', 'Heading1', 'Heading2', 'Heading3', 'BodyText']:
+        if style_name in styles:
+            styles[style_name].fontName = MAIN_FONT
+            
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
-        fontSize=24,
+        fontSize=title_size,
         textColor='#1F2937',
-        spaceAfter=12,
+        spaceAfter=15,
         alignment=TA_CENTER,
         fontName=MAIN_FONT
     )
@@ -149,7 +144,7 @@ def create_pdf_summary(title, summary, video_url, transcript_source, summary_typ
     subtitle_style = ParagraphStyle(
         'CustomSubtitle',
         parent=styles['Normal'],
-        fontSize=10,
+        fontSize=subtitle_size,
         textColor='#6B7280',
         spaceAfter=20,
         alignment=TA_CENTER,
@@ -159,12 +154,21 @@ def create_pdf_summary(title, summary, video_url, transcript_source, summary_typ
     body_style = ParagraphStyle(
         'CustomBody',
         parent=styles['BodyText'],
-        fontSize=10,
+        fontSize=body_size,
         alignment=TA_JUSTIFY,
         spaceAfter=10,
-        leading=14,
+        leading=body_size * 1.4,
         fontName=MAIN_FONT
     )
+    
+    return styles, title_style, subtitle_style, body_style
+
+def create_pdf_summary(title, summary, video_url, transcript_source, summary_type):
+    """Create PDF summary with Polish character support and Markdown parsing."""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    
+    styles, title_style, subtitle_style, body_style = _get_pdf_styles(title_size=24, subtitle_size=10, body_size=10)
     
     story = []
     
@@ -241,43 +245,7 @@ def create_hybrid_pdf(title, summary, transcript, video_url, transcript_source, 
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
     
-    styles = getSampleStyleSheet()
-    
-    # Update styles
-    styles['Normal'].fontName = MAIN_FONT
-    styles['Heading1'].fontName = MAIN_FONT
-    styles['Heading2'].fontName = MAIN_FONT
-    styles['BodyText'].fontName = MAIN_FONT
-
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=20,
-        textColor='#1F2937',
-        spaceAfter=10,
-        alignment=TA_CENTER,
-        fontName=MAIN_FONT
-    )
-    
-    subtitle_style = ParagraphStyle(
-        'CustomSubtitle',
-        parent=styles['Normal'],
-        fontSize=9,
-        textColor='#6B7280',
-        spaceAfter=15,
-        alignment=TA_CENTER,
-        fontName=MAIN_FONT
-    )
-    
-    body_style = ParagraphStyle(
-        'CustomBody',
-        parent=styles['BodyText'],
-        fontSize=9,
-        alignment=TA_JUSTIFY,
-        spaceAfter=8,
-        leading=12,
-        fontName=MAIN_FONT
-    )
+    styles, title_style, subtitle_style, body_style = _get_pdf_styles(title_size=20, subtitle_size=9, body_size=9)
     
     story = []
     

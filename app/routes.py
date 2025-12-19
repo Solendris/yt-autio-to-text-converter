@@ -158,8 +158,6 @@ def summarize_transcript():
         
         logger.info(f"[OK] Summary generated ({len(summary)} characters)")
         
-        from app.services.youtube_service import get_video_title # Lazy import to avoid circular dependency if any
-        
         # Wyciągnij video_id jeśli dostępny
         if video_url:
             video_id = extract_video_id(video_url)
