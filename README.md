@@ -1,14 +1,14 @@
-# YouTube Video Summarizer v4.0
+# YouTube Video Summarizer
 
 Zaawansowana aplikacja do automatycznego pobierania transkrypcji z YouTube, generowania profesjonalnych podsumowań przy użyciu AI (Perplexity/Gemini) i eksportu do estetycznych plików PDF.
 
-## Kluczowe Funkcje (v4.0)
+## Kluczowe Funkcje
 
 - **Dwa Niezależne Moduły**: Oddzielne sekcje do pobierania samego transkryptu (TXT) i generowania podsumowań.
 - **Dual AI Engine**:
   - **Perplexity AI** (Sonar Pro): Domyślny, wysokiej jakości model do analizy.
   - **Google Gemini**: Automatyczny fallback w przypadku problemów z Perplexity.
-- **Profesjonalne PDF (v4.0)**:
+- **Profesjonalne PDF**:
   - **Pełne wsparcie dla języka polskiego** (czcionka Lato).
   - **Formatowanie Markdown**: Pogrubienia, listy wypunktowane, nagłówki.
   - **Metadane**: Prawdziwy tytuł wideo w dokumencie (zamiast URL).
@@ -87,7 +87,7 @@ Aplikacja dostępna pod adresem: **http://localhost:5000**
 ## Rozwiązywanie Problemów
 
 - **Błąd "FFmpeg not found"**: Upewnij się, że FFmpeg jest zainstalowany i dodany do zmiennej środowiskowej PATH.
-- **Czarne kwadraty zamiast polskich znaków**: Zostało to naprawione w v4.0 dzięki czcionce Lato. Jeśli problem występuje, upewnij się, że folder `app/static/fonts` zawiera pliki `.ttf`.
+- **Czarne kwadraty zamiast polskich znaków**: Zostało to naprawione w tej wersji dzięki czcionce Lato. Jeśli problem występuje, upewnij się, że folder `app/static/fonts` zawiera pliki `.ttf`.
 - **Timeout przy długich wideo**: Dla bardzo długich materiałów (>1h) proces może trwać dłużej niż 120s. Spróbuj użyć trybu "Concise" lub podzielić materiał.
 
 ## Licencja
