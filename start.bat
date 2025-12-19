@@ -27,16 +27,13 @@ REM Zainstaluj/aktualizuj zależności
 echo Instaluje zaleznosci...
 pip install -r requirements.txt
 
+
 REM Uruchom aplikację
 echo.
 echo Uruchamianie Flask serwera...
-echo Frontend: http://localhost:8000/index.html
-echo Backend: http://localhost:5000
-echo.
-echo Tip: W innym Command Prompt uruchom: python -m http.server 8000
+echo Frontend & Backend: http://localhost:5000
 echo.
 
-cd /d "C:\ZOSTAWIC\Tools\Moj_yt_pdf_converter\local"
-python app.py
+python run.py
 
 pause

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Video Summarizer v4.0</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📺 YouTube Video Summarizer v4.0</h1>
+            <p>2 Independent Sections: Transcript + Summarize</p>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <input type="text" id="videoUrl" placeholder="Paste YouTube URL...">
+            </div>
+        </div>
+
+        <div class="sections">
+            <!-- SECTION 1: TRANSCRIPT -->
+            <div class="section transcript">
+                <h2>📝 Section 1: Transcript</h2>
+
+                <div class="info-box">
+                    ✓ Auto source detection<br>
+                    ✓ 3-5 minutes processing<br>
+                    ✓ Cost: FREE
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-action" onclick="generateTranscript()">Generate Transcript</button>
+                </div>
+
+                <div class="status" id="transcriptStatus"></div>
+                <button class="btn-download" id="transcriptDownloadBtn" onclick="downloadTranscript()">↓ Download
+                    Transcript</button>
+            </div>
+
+            <!-- SECTION 2: SUMMARIZE -->
+            <div class="section summarize">
+                <h2>✨ Section 2: Summarize</h2>
+
+                <div class="options">
+                    <!-- SOURCE SELECTOR -->
+                    <div class="option-group">
+                        <label>📁 Transcript Source:</label>
+                        <div class="option-buttons">
+                            <button class="option-btn active" onclick="setSummarySource(this, 'video')">From
+                                Video</button>
+                            <button class="option-btn" onclick="setSummarySource(this, 'file')">From File ⭐</button>
+                        </div>
+                    </div>
+
+                    <!-- VIDEO URL INPUT (shown by default) -->
+                    <div id="videoUrlGroup" class="option-group">
+                        <label>YouTube URL:</label>
+                        <input type="text" id="summaryVideoUrl" placeholder="Paste YouTube URL..." class="url-input">
+                    </div>
+
+                    <!-- FILE UPLOAD (hidden by default) -->
+                    <div id="fileUploadGroup" class="option-group" style="display: none;">
+                        <label>📄 Upload Transcript File:</label>
+                        <input type="file" id="transcriptFile" accept=".txt">
+                        <div id="fileInfo"></div>
+                    </div>
+
+                    <!-- SUMMARY TYPE -->
+                    <div class="option-group">
+                        <label>Summary Type:</label>
+                        <div class="option-buttons">
+                            <button class="option-btn" onclick="setSummaryType(this, 'concise')">Concise</button>
+                            <button class="option-btn active" onclick="setSummaryType(this, 'normal')">Normal ⭐</button>
+                            <button class="option-btn" onclick="setSummaryType(this, 'detailed')">Detailed</button>
+                        </div>
+                    </div>
+
+                    <!-- OUTPUT FORMAT -->
+                    <div class="option-group">
+                        <label>Format:</label>
+                        <div class="option-buttons">
+                            <button class="option-btn active" onclick="setSummaryFormat(this, 'pdf')">PDF</button>
+                            <button class="option-btn" onclick="setSummaryFormat(this, 'txt')">TXT</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-action" onclick="generateSummary()">Generate Summary</button>
+                </div>
+
+                <div class="status" id="summarizeStatus"></div>
+                <button class="btn-download" id="summarizeDownloadBtn" onclick="downloadSummary()">↓ Download
+                    Summary</button>
+            </div>
+        </div>
+
+        <!-- HYBRID SECTION -->
+        <div class="hybrid-section">
+            <h2>🎯 Bonus: Hybrid (Transcript + Summary)</h2>
+
+            <div class="options">
+                <div class="option-group">
+                    <label>Summary Type:</label>
+                    <div class="option-buttons">
+                        <button class="option-btn" onclick="setHybridType(this, 'concise')">Concise</button>
+                        <button class="option-btn active" onclick="setHybridType(this, 'normal')">Normal ⭐</button>
+                        <button class="option-btn" onclick="setHybridType(this, 'detailed')">Detailed</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                ✓ Single PDF with both<br>
+                ✓ Perfect for archiving<br>
+                ✓ Cost: $0.05-0.15
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn-action" onclick="generateHybrid()">Generate Hybrid PDF</button>
+            </div>
+
+            <div class="status" id="hybridStatus"></div>
+            <button class="btn-download" id="hybridDownloadBtn" onclick="downloadHybrid()">↓ Download Hybrid</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>
