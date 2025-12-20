@@ -20,14 +20,11 @@ function setSummarySource(btn, source) {
     btn.classList.add('active');
     summarySource = source;
 
-    const videoGroup = document.getElementById('videoUrlGroup');
     const fileGroup = document.getElementById('fileUploadGroup');
 
     if (source === 'video') {
-        videoGroup.style.display = 'block';
         fileGroup.style.display = 'none';
     } else {
-        videoGroup.style.display = 'none';
         fileGroup.style.display = 'block';
     }
 }
@@ -128,12 +125,11 @@ async function generateTranscript() {
 
 async function generateSummary() {
     const fileInput = document.getElementById('transcriptFile');
-    const videoUrlInput = document.getElementById('summaryVideoUrl');
 
     if (summarySource === 'video') {
-        const url = videoUrlInput.value.trim() || document.getElementById('videoUrl').value.trim();
+        const url = document.getElementById('videoUrl').value.trim();
         if (!url) {
-            showStatus('summarizeStatus', 'Enter YouTube URL', 'error');
+            showStatus('summarizeStatus', 'Enter YouTube URL above', 'error');
             return;
         }
 
@@ -243,4 +239,31 @@ function downloadHybrid() {
     link.href = URL.createObjectURL(currentHybrid);
     link.download = 'hybrid.pdf';
     link.click();
+}
+
+function extractVideoId(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
+function updateVideoPreview() {
+    const url = document.getElementById('videoUrl').value.trim();
+    const container = document.getElementById('videoPreviewContainer');
+    const iframe = document.getElementById('videoPlayer');
+
+    if (!container || !iframe) return;
+
+    const videoId = extractVideoId(url);
+
+    if (videoId) {
+        const newSrc = `https://www.youtube.com/embed/${videoId}`;
+        if (iframe.src !== newSrc) {
+            iframe.src = newSrc;
+        }
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
+        iframe.src = '';
+    }
 }

@@ -64,3 +64,17 @@
 [2025-12-20 15:59:55] [INFO] [OK] Transcription complete (15276 characters)
 [2025-12-20 15:59:55] [INFO] Using Whisper transcript source
 [2025-12-20 15:59:55] [INFO] [OK] Transcript ready - source: whisper
+[2025-12-20 16:03:37] [INFO] Registered fonts: Lato-Regular
+[2025-12-20 16:03:37] [INFO] Starting Flask server...
+[2025-12-20 16:03:37] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-20 16:03:37] [INFO] Endpoints:
+[2025-12-20 16:03:37] [INFO]   - POST /api/transcript
+[2025-12-20 16:03:37] [INFO]   - POST /api/summarize
+[2025-12-20 16:03:37] [INFO]   - POST /api/hybrid
+[2025-12-20 16:03:38] [INFO] Registered fonts: Lato-Regular
+[2025-12-20 16:03:38] [INFO] Starting Flask server...
+[2025-12-20 16:03:38] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-20 16:03:38] [INFO] Endpoints:
+[2025-12-20 16:03:38] [INFO]   - POST /api/transcript
+[2025-12-20 16:03:38] [INFO]   - POST /api/summarize
+[2025-12-20 16:03:38] [INFO]   - POST /api/hybrid

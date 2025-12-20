@@ -17,7 +17,13 @@
 
         <div class="input-section">
             <div class="input-group">
-                <input type="text" id="videoUrl" placeholder="Paste YouTube URL...">
+                <input type="text" id="videoUrl" placeholder="Paste YouTube URL..." oninput="updateVideoPreview()">
+            </div>
+            <!-- Video Preview -->
+            <div id="videoPreviewContainer" class="video-preview" style="display: none;">
+                <iframe id="videoPlayer" width="560" height="315" src="" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
             </div>
         </div>
 
@@ -61,10 +67,7 @@
                     </div>
 
                     <!-- VIDEO URL INPUT (shown by default) -->
-                    <div id="videoUrlGroup" class="option-group">
-                        <label>YouTube URL:</label>
-                        <input type="text" id="summaryVideoUrl" placeholder="Paste YouTube URL..." class="url-input">
-                    </div>
+
 
                     <!-- FILE UPLOAD (hidden by default) -->
                     <div id="fileUploadGroup" class="option-group" style="display: none;">
