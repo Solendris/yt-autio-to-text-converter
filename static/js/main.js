@@ -79,11 +79,17 @@ document.addEventListener('DOMContentLoaded', function () {
             };
             reader.readAsText(file);
         });
+
     }
+
+    // Initialize video preview if URL is present (e.g. from refresh)
+    updateVideoPreview();
 });
 
 async function generateTranscript() {
     const url = document.getElementById('videoUrl').value.trim();
+    const useDiarization = document.getElementById('useDiarization').checked;
+
     if (!url) {
         showStatus('transcriptStatus', 'Enter URL', 'error');
         return;
@@ -95,7 +101,7 @@ async function generateTranscript() {
         const response = await fetch(`${API_BASE}/transcript`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url })
+            body: JSON.stringify({ url, diarization: useDiarization })
         });
 
         if (!response.ok) throw new Error('Failed');
@@ -112,8 +118,8 @@ async function generateTranscript() {
         // Display transcript
         const displayEl = document.getElementById('transcriptDisplay');
         if (displayEl) {
-            // Convert plain text to HTML with clickable links
-            displayEl.innerHTML = makeTimestampsClickable(data.transcript);
+            // Convert plain text to HTML with clickable links and speaker styles
+            displayEl.innerHTML = formatTranscript(data.transcript);
             displayEl.style.display = 'block';
 
             // Show hint
@@ -287,7 +293,8 @@ function onYouTubeIframeAPIReady() {
 }
 
 function onPlayerReady(event) {
-    // Player ready
+    // Player ready, check if we have a URL waiting
+    updateVideoPreview();
 }
 
 function seekToTimestamp(timeStr) {
@@ -305,9 +312,52 @@ function seekToTimestamp(timeStr) {
     player.playVideo();
 }
 
-function makeTimestampsClickable(text) {
-    // Regex for [MM:SS] or [HH:MM:SS]
-    return text.replace(/\[(\d{1,2}:\d{2}(?::\d{2})?)\]/g, (match, time) => {
-        return `<span class="timestamp-link" onclick="seekToTimestamp('${time}')">${match}</span>`;
+function formatTranscript(text) {
+    if (!text) return '';
+
+    // Function to generate timestamp HTML
+    const getLink = (timeStr) =>
+        `<span class="timestamp-link" onclick="seekToTimestamp('${timeStr.replace(/[\[\]]/g, '')}')">${timeStr}</span>`;
+
+    const lines = text.split('\n');
+    let html = '';
+
+    const speakerRegex = /^(\[\d{1,2}:\d{2}(?::\d{2})?\])\s*(Speaker \d+|[\w\s]+):(.*)/i;
+
+    // Map speaker names to color ID (1-12)
+    const speakerMap = {};
+    let nextColorId = 1;
+    const maxColors = 12;
+
+    lines.forEach(line => {
+        const match = line.match(speakerRegex);
+        if (match) {
+            const timeStr = match[1];
+            const speakerName = match[2].trim();
+            const content = match[3].trim();
+
+            // Assign distinct color class to each unique speaker
+            if (!speakerMap[speakerName]) {
+                speakerMap[speakerName] = nextColorId;
+                nextColorId = (nextColorId % maxColors) + 1;
+            }
+            const colorId = speakerMap[speakerName];
+            const cssClass = `speaker-${colorId}`;
+
+            html += `<div class="transcript-line ${cssClass}">
+                        ${getLink(timeStr)} 
+                        <span class="speaker-label">${speakerName}</span> 
+                        ${content}
+                     </div>`;
+        } else {
+            // Fallback for lines without speaker prefix (or standard non-diarized text)
+            // Still make timestamps clickable
+            const processedLine = line.replace(/\[(\d{1,2}:\d{2}(?::\d{2})?)\]/g, (m, t) => getLink(m));
+            if (processedLine.trim()) {
+                html += `<div>${processedLine}</div>`;
+            }
+        }
     });
+
+    return html;
 }

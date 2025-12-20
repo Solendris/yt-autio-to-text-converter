@@ -26,21 +26,43 @@ def health():
 def get_transcript_only():
     """SEKCJA 1: ONLY Transkrypt (bez streszczenia)"""
     try:
-        data = request.json
-        video_url = data.get('url', '').strip()
+        data = request.get_json()
+        video_url = data.get('url')
+        use_diarization = data.get('diarization', False)
         
         if not video_url:
-            logger.warning("Transcript: No URL")
-            return jsonify({'error': 'No video URL provided'}), 400
+            return jsonify({'error': 'No URL provided'}), 400
         
-        logger.info(f">>> ENDPOINT: /api/transcript <<<")
-        logger.info(f"Processing: {video_url}")
+        logger.info(f"Processing transcript request: {video_url} (Diarization: {use_diarization})")
         
-        transcript, source = get_transcript(video_url)
-        
-        if not transcript:
-            logger.error(f"Transcript failed: {source}")
-            return jsonify({'error': source}), 400
+        try:
+            if use_diarization:
+                # Route to Gemini Audio
+                from app.services.youtube_service import download_audio_from_youtube
+                from app.services.gemini_audio_service import transcribe_with_gemini
+                import os # Import os here for cleanup
+                
+                audio_path = download_audio_from_youtube(video_url)
+                if audio_path:
+                    transcript, source = transcribe_with_gemini(audio_path)
+                    # Clean up audio
+                    try:
+                        os.remove(audio_path)
+                    except Exception as cleanup_e:
+                        logger.warning(f"Failed to clean up audio file {audio_path}: {cleanup_e}")
+                else:
+                    transcript, source = None, "Audio download failed"
+            else:
+                # Standard flow
+                transcript, source = get_transcript(video_url)
+            
+            if not transcript:
+                logger.error(f"Transcript failed: {source}")
+                return jsonify({'error': source}), 400
+            
+        except Exception as e:
+            logger.error(f"Transcript generation error (diarization flow): {str(e)}")
+            return jsonify({'error': f"Transcript generation failed: {str(e)}"}), 500
         
         logger.info(f"[OK] Transcript ready - source: {source}")
         

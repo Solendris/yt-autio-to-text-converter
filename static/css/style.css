@@ -228,6 +228,154 @@ input[type="text"]:focus {
     margin-top: 12px;
 }
 
+/* Speaker Diarization Styles */
+.transcript-line {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    border-left: 4px solid transparent;
+    color: #e5e7eb;
+    /* default text */
+}
+
+.speaker-label {
+    font-weight: bold;
+    margin-right: 8px;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Specific Speaker Colors */
+.speaker-1 {
+    background: rgba(59, 130, 246, 0.1);
+    /* Blue tint */
+    border-left-color: #3b82f6;
+}
+
+.speaker-1 .speaker-label {
+    color: #93c5fd;
+}
+
+.speaker-2 {
+    background: rgba(16, 185, 129, 0.1);
+    /* Emerald tint */
+    border-left-color: #10b981;
+}
+
+.speaker-2 .speaker-label {
+    color: #6ee7b7;
+}
+
+.speaker-3 {
+    background: rgba(139, 92, 246, 0.1);
+    /* Violet tint */
+    border-left-color: #8b5cf6;
+}
+
+.speaker-3 .speaker-label {
+    color: #c4b5fd;
+}
+
+.speaker-4 {
+    background: rgba(245, 158, 11, 0.1);
+    /* Amber tint */
+    border-left-color: #f59e0b;
+}
+
+.speaker-4 .speaker-label {
+    color: #fcd34d;
+}
+
+.speaker-5 {
+    background: rgba(236, 72, 153, 0.1);
+    /* Pink tint */
+    border-left-color: #ec4899;
+}
+
+.speaker-5 .speaker-label {
+    color: #f9a8d4;
+}
+
+.speaker-6 {
+    background: rgba(6, 182, 212, 0.1);
+    /* Cyan tint */
+    border-left-color: #06b6d4;
+}
+
+.speaker-6 .speaker-label {
+    color: #67e8f9;
+}
+
+/* Expanded Palette (7-12) */
+.speaker-7 {
+    background: rgba(220, 38, 38, 0.1);
+    /* Red */
+    border-left-color: #dc2626;
+}
+
+.speaker-7 .speaker-label {
+    color: #fca5a5;
+}
+
+.speaker-8 {
+    background: rgba(234, 88, 12, 0.1);
+    /* Orange */
+    border-left-color: #ea580c;
+}
+
+.speaker-8 .speaker-label {
+    color: #fdba74;
+}
+
+.speaker-9 {
+    background: rgba(13, 148, 136, 0.1);
+    /* Teal */
+    border-left-color: #0d9488;
+}
+
+.speaker-9 .speaker-label {
+    color: #5eead4;
+}
+
+.speaker-10 {
+    background: rgba(101, 163, 13, 0.1);
+    /* Lime */
+    border-left-color: #65a30d;
+}
+
+.speaker-10 .speaker-label {
+    color: #bef264;
+}
+
+.speaker-11 {
+    background: rgba(79, 70, 229, 0.1);
+    /* Indigo */
+    border-left-color: #4f46e5;
+}
+
+.speaker-11 .speaker-label {
+    color: #a5b4fc;
+}
+
+.speaker-12 {
+    background: rgba(192, 38, 211, 0.1);
+    /* Fuchsia */
+    border-left-color: #c026d3;
+}
+
+.speaker-12 .speaker-label {
+    color: #f0abfc;
+}
+
+.speaker-other {
+    background: rgba(107, 114, 128, 0.1);
+    /* Gray tint */
+    border-left-color: #9ca3af;
+}
+
 /* File input styling */
 input[type="file"] {
     padding: 8px;
@@ -266,7 +414,7 @@ input[type="text"].url-input {
     line-height: 1.5;
     max-height: 400px;
     overflow-y: auto;
-    white-space: pre-wrap;
+    white-space: pre-line;
     border: 1px solid #333;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
@@ -286,23 +434,49 @@ input[type="text"].url-input {
 }
 
 .transcript-box::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
 
-    /* Video Preview Styling */
-    .video-preview {
-        margin-top: 20px;
-        position: relative;
-        padding-bottom: 56.25%;
-        /* 16:9 aspect ratio */
-        height: 0;
-        overflow: hidden;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
+/* Video Preview Styling */
+.video-preview {
+    margin-top: 20px;
+    position: relative;
+    padding-bottom: 56.25%;
+    /* 16:9 aspect ratio */
+    height: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
 
-    .video-preview iframe {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-    }
+.video-preview iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Left align all transcript text */
+.transcript-box {
+    text-align: left !important;
+}
+
+.transcript-line {
+    text-align: left !important;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.transcript-line .timestamp-link {
+    display: inline-block;
+    margin-bottom: 2px;
+}
+
+/* Ensure header inside bubbles aligns effectively */
+.transcript-line .speaker-label {
+    display: inline-block;
+    margin-bottom: 4px;
+}
