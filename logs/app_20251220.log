@@ -1,0 +1,66 @@
+[2025-12-20 15:49:00] [INFO] Registered fonts: Lato-Regular
+[2025-12-20 15:49:00] [INFO] Starting Flask server...
+[2025-12-20 15:49:00] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-20 15:49:00] [INFO] Endpoints:
+[2025-12-20 15:49:00] [INFO]   - POST /api/transcript
+[2025-12-20 15:49:00] [INFO]   - POST /api/summarize
+[2025-12-20 15:49:00] [INFO]   - POST /api/hybrid
+[2025-12-20 15:49:00] [INFO] Registered fonts: Lato-Regular
+[2025-12-20 15:49:00] [INFO] Starting Flask server...
+[2025-12-20 15:49:00] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-20 15:49:00] [INFO] Endpoints:
+[2025-12-20 15:49:00] [INFO]   - POST /api/transcript
+[2025-12-20 15:49:00] [INFO]   - POST /api/summarize
+[2025-12-20 15:49:00] [INFO]   - POST /api/hybrid
+[2025-12-20 15:49:17] [INFO] >>> ENDPOINT: /api/transcript <<<
+[2025-12-20 15:49:17] [INFO] Processing: https://www.youtube.com/watch?v=YDyO4jTR4A0
+[2025-12-20 15:49:17] [INFO] >>> SECTION 1: Getting transcript <<<
+[2025-12-20 15:49:17] [INFO] Attempting YouTube transcript API for: YDyO4jTR4A0
+[2025-12-20 15:49:18] [WARNING] YouTube transcript not available: TranscriptList.find_manually_created_transcript() missing 1 required positional argument: 'language_codes'
+[2025-12-20 15:49:18] [INFO] Falling back to Whisper...
+[2025-12-20 15:49:18] [INFO] Downloading audio: https://www.youtube.com/watch?v=YDyO4jTR4A0
+[2025-12-20 15:49:18] [INFO] Audio download attempt 1/3...
+[2025-12-20 15:49:49] [INFO] [OK] Audio downloaded: C:\Users\Kornel\AppData\Local\Temp\yt_audio_20251220_154918.mp3
+[2025-12-20 15:49:49] [INFO] Transcribing with Whisper...
+[2025-12-20 15:49:49] [INFO] Initializing Whisper model...
+[2025-12-20 15:49:50] [INFO] [OK] Whisper model loaded
+[2025-12-20 15:51:57] [INFO] [OK] Transcription complete (15276 characters)
+[2025-12-20 15:51:57] [INFO] Using Whisper transcript source
+[2025-12-20 15:51:57] [INFO] [OK] Transcript ready - source: whisper
+[2025-12-20 15:51:57] [INFO] [OK] Transcript file created
+[2025-12-20 15:55:15] [INFO] Registered fonts: Lato-Regular
+[2025-12-20 15:55:15] [INFO] Starting Flask server...
+[2025-12-20 15:55:15] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-20 15:55:15] [INFO] Endpoints:
+[2025-12-20 15:55:15] [INFO]   - POST /api/transcript
+[2025-12-20 15:55:15] [INFO]   - POST /api/summarize
+[2025-12-20 15:55:15] [INFO]   - POST /api/hybrid
+[2025-12-20 15:56:31] [INFO] Registered fonts: Lato-Regular
+[2025-12-20 15:56:31] [INFO] Starting Flask server...
+[2025-12-20 15:56:31] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-20 15:56:31] [INFO] Endpoints:
+[2025-12-20 15:56:31] [INFO]   - POST /api/transcript
+[2025-12-20 15:56:31] [INFO]   - POST /api/summarize
+[2025-12-20 15:56:31] [INFO]   - POST /api/hybrid
+[2025-12-20 15:56:32] [INFO] Registered fonts: Lato-Regular
+[2025-12-20 15:56:32] [INFO] Starting Flask server...
+[2025-12-20 15:56:32] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-20 15:56:32] [INFO] Endpoints:
+[2025-12-20 15:56:32] [INFO]   - POST /api/transcript
+[2025-12-20 15:56:32] [INFO]   - POST /api/summarize
+[2025-12-20 15:56:32] [INFO]   - POST /api/hybrid
+[2025-12-20 15:57:32] [INFO] >>> ENDPOINT: /api/transcript <<<
+[2025-12-20 15:57:32] [INFO] Processing: https://www.youtube.com/watch?v=YDyO4jTR4A0
+[2025-12-20 15:57:32] [INFO] >>> SECTION 1: Getting transcript <<<
+[2025-12-20 15:57:32] [INFO] Attempting YouTube transcript API for: YDyO4jTR4A0
+[2025-12-20 15:57:33] [WARNING] YouTube transcript not available: TranscriptList.find_manually_created_transcript() missing 1 required positional argument: 'language_codes'
+[2025-12-20 15:57:33] [INFO] Falling back to Whisper...
+[2025-12-20 15:57:33] [INFO] Downloading audio: https://www.youtube.com/watch?v=YDyO4jTR4A0
+[2025-12-20 15:57:33] [INFO] Audio download attempt 1/3...
+[2025-12-20 15:57:44] [INFO] [OK] Audio downloaded: C:\Users\Kornel\AppData\Local\Temp\yt_audio_20251220_155733.mp3
+[2025-12-20 15:57:44] [INFO] Transcribing with Whisper...
+[2025-12-20 15:57:44] [INFO] Initializing Whisper model...
+[2025-12-20 15:57:45] [INFO] [OK] Whisper model loaded
+[2025-12-20 15:59:55] [INFO] [OK] Transcription complete (15276 characters)
+[2025-12-20 15:59:55] [INFO] Using Whisper transcript source
+[2025-12-20 15:59:55] [INFO] [OK] Transcript ready - source: whisper

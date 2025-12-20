@@ -44,14 +44,13 @@ def get_transcript_only():
         
         logger.info(f"[OK] Transcript ready - source: {source}")
         
-        transcript_buffer = create_transcript_file(transcript, source)
-        
-        return send_file(
-            transcript_buffer,
-            mimetype='text/plain',
-            as_attachment=True,
-            download_name=f'transcript_{extract_video_id(video_url)}_{source}.txt'
-        )
+        # Return JSON with content instead of file download
+        return jsonify({
+            'status': 'ok',
+            'transcript': transcript,
+            'source': source,
+            'filename': f'transcript_{extract_video_id(video_url)}_{source}.txt'
+        })
     
     except Exception as e:
         logger.error(f"Transcript endpoint error: {str(e)}")

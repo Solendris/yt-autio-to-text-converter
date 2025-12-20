@@ -1,6 +1,7 @@
 const API_BASE = '/api';
 
 let currentTranscript = null;
+let currentTranscriptFilename = 'transcript.txt';
 let currentSummary = null;
 let currentHybrid = null;
 let selectedSummaryType = 'normal';
@@ -102,8 +103,23 @@ async function generateTranscript() {
 
         if (!response.ok) throw new Error('Failed');
 
-        currentTranscript = await response.blob();
-        showStatus('transcriptStatus', '[OK] Ready!', 'success');
+        const data = await response.json();
+
+        if (data.error) throw new Error(data.error);
+
+        // Store transcript for download
+        const blob = new Blob([data.transcript], { type: 'text/plain' });
+        currentTranscript = blob;
+        currentTranscriptFilename = data.filename;
+
+        // Display transcript
+        const displayEl = document.getElementById('transcriptDisplay');
+        if (displayEl) {
+            displayEl.textContent = data.transcript;
+            displayEl.style.display = 'block';
+        }
+
+        showStatus('transcriptStatus', `[OK] Ready! Source: ${data.source}`, 'success');
         document.getElementById('transcriptDownloadBtn').style.display = 'block';
     } catch (e) {
         showStatus('transcriptStatus', 'Error: ' + e.message, 'error');
@@ -209,7 +225,7 @@ function downloadTranscript() {
     if (!currentTranscript) return;
     const link = document.createElement('a');
     link.href = URL.createObjectURL(currentTranscript);
-    link.download = 'transcript.txt';
+    link.download = currentTranscriptFilename || 'transcript.txt';
     link.click();
 }
 

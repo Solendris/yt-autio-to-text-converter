@@ -254,3 +254,37 @@ input[type="text"].url-input {
     font-size: 13px;
     font-family: monospace;
 }
+
+.transcript-box {
+    margin-top: 20px;
+    padding: 15px;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border-radius: 8px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    border: 1px solid #333;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Scrollbar styling for transcript box */
+.transcript-box::-webkit-scrollbar {
+    width: 8px;
+}
+
+.transcript-box::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+.transcript-box::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+}
+
+.transcript-box::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
