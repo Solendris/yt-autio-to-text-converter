@@ -21,9 +21,7 @@
             </div>
             <!-- Video Preview -->
             <div id="videoPreviewContainer" class="video-preview" style="display: none;">
-                <iframe id="videoPlayer" width="560" height="315" src="" frameborder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen></iframe>
+                <div id="videoPlayer"></div>
             </div>
         </div>
 
@@ -43,6 +41,13 @@
                 </div>
 
                 <div class="status" id="transcriptStatus"></div>
+
+                <div class="status" id="transcriptStatus"></div>
+
+                <!-- Hint for interactive timestamps -->
+                <div id="timestampHint" class="timestamp-hint" style="display: none;">
+                    💡 Tip: Click timestamps <b>[MM:SS]</b> to jump to that moment in the video.
+                </div>
 
                 <!-- Transcript Display Area -->
                 <div id="transcriptDisplay" class="transcript-box" style="display: none;"></div>
@@ -136,6 +141,7 @@
         </div>
     </div>
 
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 

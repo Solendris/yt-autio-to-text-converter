@@ -112,8 +112,13 @@ async function generateTranscript() {
         // Display transcript
         const displayEl = document.getElementById('transcriptDisplay');
         if (displayEl) {
-            displayEl.textContent = data.transcript;
+            // Convert plain text to HTML with clickable links
+            displayEl.innerHTML = makeTimestampsClickable(data.transcript);
             displayEl.style.display = 'block';
+
+            // Show hint
+            const hintEl = document.getElementById('timestampHint');
+            if (hintEl) hintEl.style.display = 'block';
         }
 
         showStatus('transcriptStatus', `[OK] Ready! Source: ${data.source}`, 'success');
@@ -250,20 +255,59 @@ function extractVideoId(url) {
 function updateVideoPreview() {
     const url = document.getElementById('videoUrl').value.trim();
     const container = document.getElementById('videoPreviewContainer');
-    const iframe = document.getElementById('videoPlayer');
 
-    if (!container || !iframe) return;
+    // Check if player is initialized
+    if (!player || typeof player.loadVideoById !== 'function') return;
 
     const videoId = extractVideoId(url);
 
     if (videoId) {
-        const newSrc = `https://www.youtube.com/embed/${videoId}`;
-        if (iframe.src !== newSrc) {
-            iframe.src = newSrc;
-        }
         container.style.display = 'block';
+        // Only update if it's a new video to avoid reloading
+        // We can check current video data if available, or just load
+        // Simply loading is fine, YT player handles buffering
+        player.loadVideoById(videoId);
     } else {
         container.style.display = 'none';
-        iframe.src = '';
+        player.stopVideo();
     }
+}
+
+// YouTube Player API
+let player;
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player('videoPlayer', {
+        height: '315',
+        width: '100%',
+        videoId: '',
+        events: {
+            'onReady': onPlayerReady
+        }
+    });
+}
+
+function onPlayerReady(event) {
+    // Player ready
+}
+
+function seekToTimestamp(timeStr) {
+    if (!player || typeof player.seekTo !== 'function') return;
+
+    const parts = timeStr.split(':');
+    let seconds = 0;
+    if (parts.length === 2) {
+        seconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    } else if (parts.length === 3) {
+        seconds = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+    }
+
+    player.seekTo(seconds, true);
+    player.playVideo();
+}
+
+function makeTimestampsClickable(text) {
+    // Regex for [MM:SS] or [HH:MM:SS]
+    return text.replace(/\[(\d{1,2}:\d{2}(?::\d{2})?)\]/g, (match, time) => {
+        return `<span class="timestamp-link" onclick="seekToTimestamp('${time}')">${match}</span>`;
+    });
 }
