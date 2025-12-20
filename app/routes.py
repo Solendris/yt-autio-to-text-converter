@@ -4,7 +4,7 @@ from app.config import Config
 from app.utils.logger import logger
 from app.services.youtube_service import get_transcript, extract_video_id, get_video_title
 from app.services.summarization_service import summarize_with_perplexity, summarize_with_gemini
-from app.services.pdf_service import create_transcript_file, create_pdf_summary, create_hybrid_pdf
+from app.services.pdf_service import create_pdf_summary, create_hybrid_pdf
 from io import BytesIO
 from datetime import datetime
 
@@ -40,7 +40,7 @@ def get_transcript_only():
                 # Route to Gemini Audio
                 from app.services.youtube_service import download_audio_from_youtube
                 from app.services.gemini_audio_service import transcribe_with_gemini
-                import os # Import os here for cleanup
+                import os
                 
                 audio_path = download_audio_from_youtube(video_url)
                 if audio_path:

@@ -453,3 +453,32 @@ violations {
 [2025-12-20 17:37:43] [INFO]   - POST /api/transcript
 [2025-12-20 17:37:43] [INFO]   - POST /api/summarize
 [2025-12-20 17:37:43] [INFO]   - POST /api/hybrid
+[2025-12-20 17:41:41] [INFO] Registered fonts: Lato-Regular
+[2025-12-20 17:41:41] [INFO] Starting Flask server...
+[2025-12-20 17:41:41] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-20 17:41:41] [INFO] Endpoints:
+[2025-12-20 17:41:41] [INFO]   - POST /api/transcript
+[2025-12-20 17:41:41] [INFO]   - POST /api/summarize
+[2025-12-20 17:41:41] [INFO]   - POST /api/hybrid
+[2025-12-20 17:41:42] [INFO] Registered fonts: Lato-Regular
+[2025-12-20 17:41:42] [INFO] Starting Flask server...
+[2025-12-20 17:41:42] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-20 17:41:42] [INFO] Endpoints:
+[2025-12-20 17:41:42] [INFO]   - POST /api/transcript
+[2025-12-20 17:41:42] [INFO]   - POST /api/summarize
+[2025-12-20 17:41:42] [INFO]   - POST /api/hybrid
+[2025-12-20 17:44:08] [INFO] Processing transcript request: https://www.youtube.com/watch?v=YDyO4jTR4A0 (Diarization: True)
+[2025-12-20 17:44:08] [INFO] Downloading audio: https://www.youtube.com/watch?v=YDyO4jTR4A0
+[2025-12-20 17:44:08] [INFO] Audio download attempt 1/3...
+[2025-12-20 17:44:19] [INFO] [OK] Audio downloaded: C:\Users\Kornel\AppData\Local\Temp\yt_audio_20251220_174408.mp3
+[2025-12-20 17:44:19] [INFO] Uploading audio to Gemini: C:\Users\Kornel\AppData\Local\Temp\yt_audio_20251220_174408.mp3
+[2025-12-20 17:44:27] [INFO] Audio ready. Generating transcript...
+[2025-12-20 17:45:08] [INFO] [OK] Gemini transcription complete (17800 chars)
+[2025-12-20 17:45:09] [INFO] [OK] Transcript ready - source: gemini
+[2025-12-20 17:48:34] [INFO] Registered fonts: Lato-Regular
+[2025-12-20 17:48:34] [INFO] Starting Flask server...
+[2025-12-20 17:48:34] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-20 17:48:34] [INFO] Endpoints:
+[2025-12-20 17:48:34] [INFO]   - POST /api/transcript
+[2025-12-20 17:48:34] [INFO]   - POST /api/summarize
+[2025-12-20 17:48:34] [INFO]   - POST /api/hybrid
