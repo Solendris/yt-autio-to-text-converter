@@ -1,6 +1,7 @@
 import os
 from faster_whisper import WhisperModel
 from app.utils.logger import logger
+from app.utils.formatting import format_seconds
 
 whisper_model = None
 
@@ -19,7 +20,15 @@ def transcribe_with_whisper(audio_path):
         model = init_whisper()
         segments, info = model.transcribe(audio_path, language="pl", beam_size=5)
         
-        transcript = ' '.join([segment.text for segment in segments])
+        formatted_lines = []
+        for segment in segments:
+            # Whisper segments usually have 'start', 'end', 'text'
+            text = segment.text.strip()
+            if text:
+                timestamp = format_seconds(segment.start)
+                formatted_lines.append(f"{timestamp} {text}")
+                
+        transcript = '\n'.join(formatted_lines)
         
         logger.info(f"[OK] Transcription complete ({len(transcript)} characters)")
         

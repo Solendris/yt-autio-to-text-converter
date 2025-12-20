@@ -6,6 +6,7 @@ from datetime import datetime
 from youtube_transcript_api import YouTubeTranscriptApi
 from app.utils.logger import logger
 from app.services.transcription_service import transcribe_with_whisper
+from app.utils.formatting import format_seconds
 
 def extract_video_id(url):
     patterns = [
@@ -39,7 +40,17 @@ def get_youtube_transcript(video_id):
             transcript = transcript_list.find_manually_created_transcript() or transcript_list.find_generated_transcript()
         
         transcript_data = transcript.fetch()
-        full_text = ' '.join([item['text'] for item in transcript_data])
+        
+        # Format with timestamps
+        formatted_lines = []
+        for item in transcript_data:
+            start = item['start']
+            text = item['text']
+            # Only add timestamp if text is not empty
+            if text.strip():
+                formatted_lines.append(f"{format_seconds(start)} {text}")
+        
+        full_text = '\n'.join(formatted_lines)
         logger.info(f"[OK] YouTube transcript fetched ({len(full_text)} characters)")
         return full_text, "youtube"
     
