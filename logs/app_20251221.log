@@ -115,3 +115,10 @@
 [2025-12-21 15:57:13] [INFO] Audio ready. Generating transcript...
 [2025-12-21 15:58:54] [INFO] [OK] Gemini transcription complete (21710 chars)
 [2025-12-21 15:58:55] [INFO] [OK] Transcript ready - source: gemini
+[2025-12-21 16:00:31] [INFO] Registered fonts: Lato-Regular
+[2025-12-21 16:00:31] [INFO] Starting Flask server...
+[2025-12-21 16:00:31] [INFO] Frontend: http://localhost:5000/index.html
+[2025-12-21 16:00:31] [INFO] Endpoints:
+[2025-12-21 16:00:31] [INFO]   - POST /api/transcript
+[2025-12-21 16:00:31] [INFO]   - POST /api/summarize
+[2025-12-21 16:00:31] [INFO]   - POST /api/hybrid
