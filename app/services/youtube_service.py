@@ -110,6 +110,29 @@ def download_audio_from_youtube(video_url):
         logger.error(f"Audio download error: {str(e)}")
         return None
 
+def get_diarized_transcript(video_url):
+    """Pobierz transkrypt z rozpoznawaniem mowców (Gemini Audio)"""
+    from app.services.gemini_audio_service import transcribe_with_gemini
+    
+    logger.info(">>> SECTION 1: Getting diarized transcript (Gemini) <<<")
+    
+    audio_path = download_audio_from_youtube(video_url)
+    if not audio_path:
+        return None, "Audio download failed"
+        
+    try:
+        transcript, source = transcribe_with_gemini(audio_path)
+        # Clean up audio
+        if os.path.exists(audio_path):
+            try:
+                os.remove(audio_path)
+            except Exception as cleanup_e:
+                logger.warning(f"Failed to clean up audio file {audio_path}: {cleanup_e}")
+        return transcript, source
+    except Exception as e:
+        logger.error(f"Diarized transcription failed: {str(e)}")
+        return None, str(e)
+
 def get_transcript(video_url):
     """SEKCJA 1: Pobierz transkrypt (YouTube API lub Whisper)"""
     video_id = extract_video_id(video_url)
@@ -130,10 +153,17 @@ def get_transcript(video_url):
         logger.error("Audio download failed")
         return None, "Failed to download audio"
     
-    transcript = transcribe_with_whisper(audio_path)
-    if transcript:
-        logger.info(f"Using Whisper transcript source")
-        return transcript, "whisper"
+    try:
+        transcript = transcribe_with_whisper(audio_path)
+        # Cleanup
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+            
+        if transcript:
+            logger.info(f"Using Whisper transcript source")
+            return transcript, "whisper"
+    except Exception as e:
+        logger.error(f"Whisper transcription failed: {str(e)}")
     
     logger.error("Both YouTube and Whisper failed")
     return None, "Failed to transcribe audio"

@@ -1,22 +1,14 @@
-from flask import Flask, render_template
+from flask import Flask
 from flask_cors import CORS
 from app.config import Config
-from app.routes import bp as api_bp
 
-def create_app():
-    app = Flask(__name__, template_folder='../templates', static_folder='../static')
-    CORS(app)
+def create_app(config_class=Config):
+    app = Flask(__name__)
+    app.config.from_object(config_class)
     
-    app.config.from_object(Config)
-    
+    CORS(app) # Enable CORS for all routes
+
+    from app.routes import bp as api_bp
     app.register_blueprint(api_bp)
-    
-    @app.route('/')
-    def index():
-        return render_template('index.html')
-        
-    @app.route('/index.html') # Legacy support
-    def index_legacy():
-        return render_template('index.html')
     
     return app
