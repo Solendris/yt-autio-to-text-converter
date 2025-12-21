@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import StatusMessage from './StatusMessage';
+import { api } from '../services/api';
 
 const SummarizeSection = ({ videoUrl }) => {
     const [source, setSource] = useState('video');
@@ -32,58 +33,29 @@ const SummarizeSection = ({ videoUrl }) => {
     };
 
     const generateSummary = async () => {
-        if (source === 'video') {
-            if (!videoUrl) {
-                setStatus({ message: 'Enter YouTube URL above', type: 'error' });
-                return;
-            }
+        if (source === 'video' && !videoUrl) {
+            setStatus({ message: 'Enter YouTube URL above', type: 'error' });
+            return;
+        }
+        if (source === 'file' && !file) {
+            setStatus({ message: 'Select a .txt file', type: 'error' });
+            return;
+        }
 
-            setStatus({ message: 'Processing...', type: 'loading' });
-            try {
-                const response = await fetch('/api/summarize', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        url: videoUrl,
-                        type: summaryType,
-                        format: format
-                    })
-                });
+        setStatus({ message: 'Processing...', type: 'loading' });
 
-                if (!response.ok) throw new Error('Failed');
+        try {
+            const blob = await api.generateSummary({
+                url: source === 'video' ? videoUrl : null,
+                type: summaryType,
+                format: format,
+                file: source === 'file' ? file : null
+            });
 
-                const blob = await response.blob();
-                setCurrentSummaryBlob(blob);
-                setStatus({ message: '[OK] Ready!', type: 'success' });
-            } catch (e) {
-                setStatus({ message: 'Error: ' + e.message, type: 'error' });
-            }
-        } else {
-            if (!file) {
-                setStatus({ message: 'Select a .txt file', type: 'error' });
-                return;
-            }
-
-            setStatus({ message: 'Processing...', type: 'loading' });
-            try {
-                const formData = new FormData();
-                formData.append('transcript_file', file);
-                formData.append('type', summaryType);
-                formData.append('format', format);
-
-                const response = await fetch('/api/summarize', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) throw new Error('Failed');
-
-                const blob = await response.blob();
-                setCurrentSummaryBlob(blob);
-                setStatus({ message: '[OK] Ready!', type: 'success' });
-            } catch (e) {
-                setStatus({ message: 'Error: ' + e.message, type: 'error' });
-            }
+            setCurrentSummaryBlob(blob);
+            setStatus({ message: '[OK] Ready!', type: 'success' });
+        } catch (e) {
+            setStatus({ message: 'Error: ' + e.message, type: 'error' });
         }
     };
 

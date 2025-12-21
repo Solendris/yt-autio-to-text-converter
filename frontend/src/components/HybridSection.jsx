@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import StatusMessage from './StatusMessage';
+import { api } from '../services/api';
 
 const HybridSection = ({ videoUrl }) => {
     const [hybridType, setHybridType] = useState('normal');
@@ -14,15 +15,7 @@ const HybridSection = ({ videoUrl }) => {
 
         setStatus({ message: 'Processing...', type: 'loading' });
         try {
-            const response = await fetch('/api/hybrid', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: videoUrl, type: hybridType })
-            });
-
-            if (!response.ok) throw new Error('Failed');
-
-            const blob = await response.blob();
+            const blob = await api.generateHybrid(videoUrl, hybridType);
             setCurrentHybridBlob(blob);
             setStatus({ message: '[OK] Ready!', type: 'success' });
         } catch (e) {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import StatusMessage from './StatusMessage';
+import { api } from '../services/api';
 
 const TranscriptSection = ({ videoUrl }) => {
     const [useDiarization, setUseDiarization] = useState(false);
@@ -15,17 +16,7 @@ const TranscriptSection = ({ videoUrl }) => {
         setStatus({ message: 'Processing...', type: 'loading' });
 
         try {
-            const response = await fetch('/api/transcript', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: videoUrl, diarization: useDiarization })
-            });
-
-            if (!response.ok) throw new Error('Failed to generate transcript');
-
-            const data = await response.json();
-            if (data.error) throw new Error(data.error);
-
+            const data = await api.generateTranscript(videoUrl, useDiarization);
             setTranscriptData(data);
             setStatus({ message: `[OK] Ready! Source: ${data.source}`, type: 'success' });
         } catch (e) {

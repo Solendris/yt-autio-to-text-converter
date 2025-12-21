@@ -2,11 +2,12 @@ import time
 from flask import Blueprint, request, jsonify, send_file
 from app.config import Config
 from app.utils.logger import logger
-from app.services.youtube_service import get_transcript, extract_video_id, get_video_title
+from app.services.youtube_service import get_transcript, extract_video_id, get_video_title, get_diarized_transcript
 from app.services.summarization_service import summarize_with_perplexity, summarize_with_gemini
 from app.services.pdf_service import create_pdf_summary, create_hybrid_pdf
 from io import BytesIO
 from datetime import datetime
+from app.utils.parsers import parse_transcript_file
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -37,21 +38,7 @@ def get_transcript_only():
         
         try:
             if use_diarization:
-                # Route to Gemini Audio
-                from app.services.youtube_service import download_audio_from_youtube
-                from app.services.gemini_audio_service import transcribe_with_gemini
-                import os
-                
-                audio_path = download_audio_from_youtube(video_url)
-                if audio_path:
-                    transcript, source = transcribe_with_gemini(audio_path)
-                    # Clean up audio
-                    try:
-                        os.remove(audio_path)
-                    except Exception as cleanup_e:
-                        logger.warning(f"Failed to clean up audio file {audio_path}: {cleanup_e}")
-                else:
-                    transcript, source = None, "Audio download failed"
+                transcript, source = get_diarized_transcript(video_url)
             else:
                 # Standard flow
                 transcript, source = get_transcript(video_url)
@@ -61,7 +48,7 @@ def get_transcript_only():
                 return jsonify({'error': source}), 400
             
         except Exception as e:
-            logger.error(f"Transcript generation error (diarization flow): {str(e)}")
+            logger.error(f"Transcript generation error: {str(e)}")
             return jsonify({'error': f"Transcript generation failed: {str(e)}"}), 500
         
         logger.info(f"[OK] Transcript ready - source: {source}")
@@ -106,37 +93,13 @@ def summarize_transcript():
         # OPCJA 1: Transkrypt z pliku (jeśli wczytany)
         if transcript_file:
             logger.info(f">>> ENDPOINT: /api/summarize (FILE UPLOAD MODE) <<<")
-            logger.info(f"File: {transcript_file.filename}")
-            
             try:
-                transcript_content = transcript_file.read().decode('utf-8')
-                logger.info(f"[OK] Transcript file loaded ({len(transcript_content)} characters)")
-                
-                # Wyciągnij transkrypt z pliku (usuń header jeśli istnieje)
-                lines = transcript_content.split('\n')
-                transcript_start = 0
-                for i, line in enumerate(lines):
-                    if '=' * 20 in line:
-                        transcript_start = i + 1
-                        break
-                
-                transcript_end = len(lines)
-                for i in range(len(lines) - 1, -1, -1):
-                    if '=' * 20 in lines[i]:
-                        transcript_end = i
-                        break
-                
-                transcript = '\n'.join(lines[transcript_start:transcript_end]).strip()
-                
-                if not transcript:
-                    transcript = transcript_content
-                
+                content = transcript_file.read().decode('utf-8')
+                transcript = parse_transcript_file(content)
                 source = "file_upload"
-                logger.info(f"[PROCESS] Extracted transcript: {len(transcript)} characters")
-                
+                logger.info(f"[OK] Transcript extracted ({len(transcript)} chars)")
             except Exception as e:
-                logger.error(f"[ERROR] Could not read transcript file: {str(e)}")
-                return jsonify({'error': f'Could not read transcript file: {str(e)}'}), 400
+                return jsonify({'error': f'Could not read file: {e}'}), 400
         
         # OPCJA 2: Transkrypt z URL video (jeśli nie wczytano pliku)
         elif video_url:
