@@ -1,39 +1,52 @@
 @echo off
-REM start.bat - Skrypt startowy dla Windows
+REM start.bat - Skrypt startowy dla Windows (Backend + Frontend)
 
-echo Uruchamianie YouTube Summarizer...
+echo ==========================================
+echo    YouTube Summarizer - Launcher
+echo ==========================================
 echo.
 
-REM Sprawdź czy virtual environment istnieje
+REM 1. Sprawdź Backend
+echo [BACKEND] Sprawdzanie srodowiska...
 if not exist "venv" (
-    echo Virtual environment nie znaleziony!
-    echo Tworze virtual environment...
+    echo [BACKEND] Tworzenie virtual environment...
     python -m venv venv
 )
 
-REM Aktywuj virtual environment
-echo Aktywuje virtual environment...
+REM 2. Aktywuj i zainstaluj zaleznosci backendu
+echo [BACKEND] Instalacja zaleznosci...
 call venv\Scripts\activate.bat
-
-REM Sprawdź czy .env istnieje
-if not exist ".env" (
-    echo Plik .env nie znaleziony!
-    echo Tworze .env z szablonu...
-    copy .env.example .env
-    echo WAZNE: Edytuj .env i dodaj swoje klucze API!
-)
-
-REM Zainstaluj/aktualizuj zależności
-echo Instaluje zaleznosci...
 pip install -r requirements.txt
 
+REM 3. Sprawdź Frontend
+echo [FRONTEND] Sprawdzanie Node.js...
+node -v >nul 2>&1
+if %errorlevel% neq 0 (
+    echo.
+    echo [BLAD] Node.js nie zostal znaleziony! 
+    echo Zainstaluj Node.js z https://nodejs.org/ aby uruchomic frontend.
+    pause
+    exit /b
+)
 
-REM Uruchom aplikację
+echo [FRONTEND] Instalacja zaleznosci (npm)...
+cd frontend
+call npm install
+cd ..
+
+REM 4. Uruchom oba moduły
 echo.
-echo Uruchamianie Flask serwera...
-echo Frontend & Backend: http://localhost:5000
+echo [!] Uruchamiam aplikacje...
+echo [!] Backend bedzie na: http://localhost:5000
+echo [!] Frontend bedzie na: http://localhost:5173
 echo.
 
-python run.py
+REM Uruchom backend w nowym oknie
+start "YouTube Summarizer - Backend (Flask)" cmd /k "call venv\Scripts\activate.bat && python run.py"
+
+REM Uruchom frontend w tym oknie (lub nowym, jesli wolisz)
+echo [VITE] Startowanie frontendu w tym oknie...
+cd frontend
+npm run dev
 
 pause

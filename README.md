@@ -52,16 +52,25 @@ GOOGLE_API_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxx  # Opcjonalnie
 
 ## Uruchamianie
 
-Najprostszy sposób (Windows):
+Aplikacja składa się z dwóch części: Backend (Flask) oraz Frontend (React).
+
+### Metoda automatyczna (Windows)
 Uruchom plik **`start.bat`**.
-*Automatycznie aktywuje środowisko, instaluje braki i startuje serwer.*
+*Skrypt automatycznie otworzy dwa okna: jedno dla serwera Flask (port 5000) i drugie dla Vite/React (port 5173).*
 
-Metoda ręczna:
-```bash
-python run.py
-```
+### Metoda ręczna
+1. **Backend**:
+   ```bash
+   python run.py
+   ```
+2. **Frontend**:
+   ```bash
+   cd frontend
+   npm install  # tylko przy pierwszym uruchomieniu
+   npm run dev
+   ```
 
-Aplikacja dostępna pod adresem: **http://localhost:5000**
+Aplikacja będzie dostępna pod adresem: **http://localhost:5173** (Vite obsługuje komunikację z backendem przez proxy).
 
 ## Instrukcja Obsługi
 

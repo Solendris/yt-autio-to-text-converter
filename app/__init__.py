@@ -1,14 +1,14 @@
 from flask import Flask, render_template
 from flask_cors import CORS
 from app.config import Config
-from app.routes import bp as api_bp
 
-def create_app():
+def create_app(config_class=Config):
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
-    CORS(app)
+    app.config.from_object(config_class)
     
-    app.config.from_object(Config)
-    
+    CORS(app) # Enable CORS for all routes
+
+    from app.routes import bp as api_bp
     app.register_blueprint(api_bp)
     
     @app.route('/')
