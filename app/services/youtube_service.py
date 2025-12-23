@@ -31,6 +31,20 @@ def get_video_title(url):
             
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
+            
+            # Log all available formats (equivalent to --list-formats)
+            formats = info.get('formats', [])
+            logger.info(f"--- AVAILABLE FORMATS for {url} ---")
+            for f in formats:
+                f_id = f.get('format_id')
+                ext = f.get('ext')
+                res = f.get('resolution')
+                note = f.get('format_note')
+                vcodec = f.get('vcodec')
+                acodec = f.get('acodec')
+                logger.info(f"ID: {f_id} | Ext: {ext} | Res: {res} | V: {vcodec} | A: {acodec} | {note}")
+            logger.info("------------------------------------------")
+            
             return info.get('title', None)
     except Exception as e:
         logger.error(f"Failed to fetch video title: {e}")
@@ -90,6 +104,8 @@ def download_audio_from_youtube(video_url):
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
         }
+        
+        logger.info(f"Requested yt-dlp format: {ydl_opts['format']}")
         
         # Check for cookies.txt
         cookies_path = os.path.join(os.getcwd(), 'cookies.txt')
