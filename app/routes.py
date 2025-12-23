@@ -6,6 +6,9 @@ from app.services.youtube_service import get_transcript, extract_video_id, get_v
 from app.services.summarization_service import summarize_with_perplexity, summarize_with_gemini
 from app.services.pdf_service import create_pdf_summary, create_hybrid_pdf
 from io import BytesIO
+import os
+import subprocess
+import json
 from datetime import datetime
 from app.utils.parsers import parse_transcript_file
 
@@ -291,4 +294,34 @@ def validate_transcript():
     
     except Exception as e:
         logger.error(f"Upload validation error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/debug', methods=['GET'])
+def debug_info():
+    """Punkt kontrolny do sprawdzenia wersji yt-dlp i środowiska"""
+    try:
+        import yt_dlp
+        yt_dlp_version = yt_dlp.version.__version__
+        
+        # Próba pobrania formatów dla przykładowego wideo (Rick Roll)
+        video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        formats_info = "N/A"
+        try:
+            result = subprocess.run(
+                ["yt-dlp", "-F", video_url], 
+                capture_output=True, 
+                text=True, 
+                timeout=10
+            )
+            formats_info = result.stdout[:1000] # Ograniczamy log
+        except Exception as e:
+            formats_info = f"Error fetching formats: {str(e)}"
+
+        return jsonify({
+            'yt_dlp_version': yt_dlp_version,
+            'ffmpeg_installed': subprocess.run(["ffmpeg", "-version"], capture_output=True).returncode == 0,
+            'env': {k: v for k, v in os.environ.items() if "KEY" not in k.upper() and "SECRET" not in k.upper()},
+            'sample_formats': formats_info
+        })
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
