@@ -22,6 +22,13 @@ def extract_video_id(url):
 def get_video_title(url):
     try:
         ydl_opts = {'quiet': True, 'skip_download': True}
+        
+        # Check for cookies.txt
+        cookies_path = os.path.join(os.getcwd(), 'cookies.txt')
+        if os.path.exists(cookies_path):
+            logger.info(f"Using cookies from: {cookies_path}")
+            ydl_opts['cookiefile'] = cookies_path
+            
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             return info.get('title', None)
@@ -83,6 +90,12 @@ def download_audio_from_youtube(video_url):
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
         }
+        
+        # Check for cookies.txt
+        cookies_path = os.path.join(os.getcwd(), 'cookies.txt')
+        if os.path.exists(cookies_path):
+            logger.info(f"Using cookies for download from: {cookies_path}")
+            ydl_opts['cookiefile'] = cookies_path
         
         max_attempts = 3
         for attempt in range(1, max_attempts + 1):

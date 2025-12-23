@@ -320,6 +320,7 @@ def debug_info():
         return jsonify({
             'yt_dlp_version': yt_dlp_version,
             'ffmpeg_installed': subprocess.run(["ffmpeg", "-version"], capture_output=True).returncode == 0,
+            'cookies_detected': os.path.exists(os.path.join(os.getcwd(), 'cookies.txt')),
             'env': {k: v for k, v in os.environ.items() if "KEY" not in k.upper() and "SECRET" not in k.upper()},
             'sample_formats': formats_info
         })
