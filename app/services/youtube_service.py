@@ -1,56 +1,147 @@
+"""
+YouTube service utilities.
+Handles video information retrieval, transcript fetching, and audio download.
+"""
 import os
 import re
 import tempfile
 import yt_dlp
 from datetime import datetime
+from typing import Tuple, Optional, Dict, Any
 from youtube_transcript_api import YouTubeTranscriptApi
+
 from app.utils.logger import logger
 from app.services.transcription_service import transcribe_with_whisper
 from app.utils.formatting import format_seconds
+from app.constants import (
+    YT_DLP_FORMAT,
+    YT_DLP_USER_AGENT,
+    YT_DLP_FRAGMENT_RETRIES,
+    YT_DLP_SOCKET_TIMEOUT,
+    PREFERRED_AUDIO_CODEC,
+    PREFERRED_AUDIO_QUALITY,
+    MAX_DOWNLOAD_ATTEMPTS,
+    DOWNLOAD_RETRY_DELAY,
+    COOKIES_FILENAME,
+    ERROR_INVALID_URL
+)
 
-def extract_video_id(url):
+
+def get_cookies_path() -> Optional[str]:
+    """
+    Get path to cookies.txt file if it exists.
+    
+    Returns:
+        Path to cookies file or None if not found
+    """
+    cookies_path = os.path.join(os.getcwd(), COOKIES_FILENAME)
+    return cookies_path if os.path.exists(cookies_path) else None
+
+
+def get_ydl_options(
+    download_audio: bool = False,
+    output_path: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Get yt-dlp options with cookies support.
+    
+    Args:
+        download_audio: Whether to configure for audio download
+        output_path: Optional output path for downloads
+        
+    Returns:
+        Dictionary of yt-dlp options
+    """
+    options = {
+        'quiet': True,
+        'no_warnings': True,
+    }
+    
+    if download_audio:
+        options.update({
+            'format': YT_DLP_FORMAT,
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': PREFERRED_AUDIO_CODEC,
+                'preferredquality': PREFERRED_AUDIO_QUALITY,
+            }],
+            'socket_timeout': YT_DLP_SOCKET_TIMEOUT,
+            'retries': MAX_DOWNLOAD_ATTEMPTS,
+            'fragment_retries': YT_DLP_FRAGMENT_RETRIES,
+            'skip_unavailable_fragments': True,
+            'http_headers': {
+                'User-Agent': YT_DLP_USER_AGENT
+            }
+        })
+        
+        if output_path:
+            options['outtmpl'] = output_path
+    else:
+        options['skip_download'] = True
+    
+    # Add cookies if available
+    cookies_path = get_cookies_path()
+    if cookies_path:
+        logger.info(f"Using cookies from: {cookies_path}")
+        options['cookiefile'] = cookies_path
+    
+    return options
+
+
+def extract_video_id(url: str) -> Optional[str]:
+    """
+    Extract video ID from YouTube URL.
+    
+    Args:
+        url: YouTube URL
+        
+    Returns:
+        Video ID or None if extraction failed
+    """
     patterns = [
-        r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?\s]+)',
+        r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)',
     ]
     
     for pattern in patterns:
         match = re.search(pattern, url)
         if match:
             return match.group(1)
+    
     return None
 
-def get_video_title(url):
-    try:
-        ydl_opts = {'quiet': True, 'skip_download': True}
+
+def get_video_title(url: str) -> Optional[str]:
+    """
+    Fetch video title using yt-dlp.
+    
+    Args:
+        url: YouTube URL
         
-        # Check for cookies.txt
-        cookies_path = os.path.join(os.getcwd(), 'cookies.txt')
-        if os.path.exists(cookies_path):
-            logger.info(f"Using cookies from: {cookies_path}")
-            ydl_opts['cookiefile'] = cookies_path
-            
+    Returns:
+        Video title or None if failed
+    """
+    try:
+        ydl_opts = get_ydl_options(download_audio=False)
+        
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            
-            # Log all available formats (equivalent to --list-formats)
-            formats = info.get('formats', [])
-            logger.info(f"--- AVAILABLE FORMATS for {url} ---")
-            for f in formats:
-                f_id = f.get('format_id')
-                ext = f.get('ext')
-                res = f.get('resolution')
-                note = f.get('format_note')
-                vcodec = f.get('vcodec')
-                acodec = f.get('acodec')
-                logger.info(f"ID: {f_id} | Ext: {ext} | Res: {res} | V: {vcodec} | A: {acodec} | {note}")
-            logger.info("------------------------------------------")
-            
             return info.get('title', None)
+            
     except Exception as e:
         logger.error(f"Failed to fetch video title: {e}")
         return None
 
-def get_youtube_transcript(video_id):
+
+def get_youtube_transcript(video_id: str) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Fetch transcript using YouTube Transcript API.
+    
+    Args:
+        video_id: YouTube video ID
+        
+    Returns:
+        Tuple of (transcript_text, source) or (None, None) if failed
+    """
     try:
         logger.info(f"Attempting YouTube transcript API for: {video_id}")
         transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
@@ -58,7 +149,10 @@ def get_youtube_transcript(video_id):
         try:
             transcript = transcript_list.find_transcript(['en'])
         except:
-            transcript = transcript_list.find_manually_created_transcript() or transcript_list.find_generated_transcript()
+            transcript = (
+                transcript_list.find_manually_created_transcript() or 
+                transcript_list.find_generated_transcript()
+            )
         
         transcript_data = transcript.fetch()
         
@@ -67,7 +161,6 @@ def get_youtube_transcript(video_id):
         for item in transcript_data:
             start = item['start']
             text = item['text']
-            # Only add timestamp if text is not empty
             if text.strip():
                 formatted_lines.append(f"{format_seconds(start)} {text}")
         
@@ -79,53 +172,44 @@ def get_youtube_transcript(video_id):
         logger.warning(f"YouTube transcript not available: {str(e)}")
         return None, None
 
-def download_audio_from_youtube(video_url):
+
+def download_audio_from_youtube(video_url: str) -> Optional[str]:
+    """
+    Download audio from YouTube video.
+    
+    Args:
+        video_url: YouTube URL
+        
+    Returns:
+        Path to downloaded audio file or None if failed
+    """
     try:
         logger.info(f"Downloading audio: {video_url}")
         
         temp_dir = tempfile.gettempdir()
-        audio_path = os.path.join(temp_dir, f"yt_audio_{datetime.now().strftime('%Y%m%d_%H%M%S')}.m4a")
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        audio_path = os.path.join(temp_dir, f"yt_audio_{timestamp}.m4a")
         
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '128',
-            }],
-            'outtmpl': audio_path.replace('.m4a', ''),
-            'quiet': True,
-            'no_warnings': True,
-            'socket_timeout': 60,
-            'retries': 3,
-            'fragment_retries': 3,
-            'skip_unavailable_fragments': True,
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        }
+        ydl_opts = get_ydl_options(
+            download_audio=True,
+            output_path=audio_path.replace('.m4a', '')
+        )
         
-        logger.info(f"Requested yt-dlp format: {ydl_opts['format']}")
+        logger.info(f"Requested yt-dlp format: {YT_DLP_FORMAT}")
         
-        # Check for cookies.txt
-        cookies_path = os.path.join(os.getcwd(), 'cookies.txt')
-        if os.path.exists(cookies_path):
-            logger.info(f"Using cookies for download from: {cookies_path}")
-            ydl_opts['cookiefile'] = cookies_path
-        
-        max_attempts = 3
-        for attempt in range(1, max_attempts + 1):
+        # Retry logic
+        for attempt in range(1, MAX_DOWNLOAD_ATTEMPTS + 1):
             try:
-                logger.info(f"Audio download attempt {attempt}/{max_attempts}...")
+                logger.info(f"Audio download attempt {attempt}/{MAX_DOWNLOAD_ATTEMPTS}...")
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([video_url])
                 break
             except Exception as e:
-                if attempt == max_attempts:
+                if attempt == MAX_DOWNLOAD_ATTEMPTS:
                     raise
                 logger.warning(f"Attempt {attempt} failed, retrying...")
                 import time
-                time.sleep(5)
+                time.sleep(DOWNLOAD_RETRY_DELAY)
         
         mp3_path = audio_path.replace('.m4a', '.mp3')
         if os.path.exists(mp3_path):
@@ -139,8 +223,17 @@ def download_audio_from_youtube(video_url):
         logger.error(f"Audio download error: {str(e)}")
         return None
 
-def get_diarized_transcript(video_url):
-    """Pobierz transkrypt z rozpoznawaniem mowców (Gemini Audio)"""
+
+def get_diarized_transcript(video_url: str) -> Tuple[Optional[str], str]:
+    """
+    Get transcript with speaker diarization using Gemini Audio.
+    
+    Args:
+        video_url: YouTube URL
+        
+    Returns:
+        Tuple of (transcript, source) or (None, error_message)
+    """
     from app.services.gemini_audio_service import transcribe_with_gemini
     
     logger.info(">>> SECTION 1: Getting diarized transcript (Gemini) <<<")
@@ -148,34 +241,48 @@ def get_diarized_transcript(video_url):
     audio_path = download_audio_from_youtube(video_url)
     if not audio_path:
         return None, "Audio download failed"
-        
+    
     try:
         transcript, source = transcribe_with_gemini(audio_path)
-        # Clean up audio
+        
+        # Cleanup audio file
         if os.path.exists(audio_path):
             try:
                 os.remove(audio_path)
             except Exception as cleanup_e:
-                logger.warning(f"Failed to clean up audio file {audio_path}: {cleanup_e}")
+                logger.warning(f"Failed to clean up audio file: {cleanup_e}")
+        
         return transcript, source
+        
     except Exception as e:
         logger.error(f"Diarized transcription failed: {str(e)}")
         return None, str(e)
 
-def get_transcript(video_url):
-    """SEKCJA 1: Pobierz transkrypt (YouTube API lub Whisper)"""
+
+def get_transcript(video_url: str) -> Tuple[Optional[str], str]:
+    """
+    Get transcript using YouTube API or Whisper fallback.
+    
+    Args:
+        video_url: YouTube URL
+        
+    Returns:
+        Tuple of (transcript, source) or (None, error_message)
+    """
     video_id = extract_video_id(video_url)
     if not video_id:
         logger.error("Invalid YouTube URL")
-        return None, "Invalid YouTube URL"
+        return None, ERROR_INVALID_URL
     
     logger.info(">>> SECTION 1: Getting transcript <<<")
     
+    # Try YouTube transcript first
     transcript, source = get_youtube_transcript(video_id)
     if transcript:
-        logger.info(f"Using YouTube transcript source")
+        logger.info("Using YouTube transcript source")
         return transcript, source
     
+    # Fallback to Whisper
     logger.info("Falling back to Whisper...")
     audio_path = download_audio_from_youtube(video_url)
     if not audio_path:
@@ -184,13 +291,15 @@ def get_transcript(video_url):
     
     try:
         transcript = transcribe_with_whisper(audio_path)
+        
         # Cleanup
         if os.path.exists(audio_path):
             os.remove(audio_path)
-            
+        
         if transcript:
-            logger.info(f"Using Whisper transcript source")
+            logger.info("Using Whisper transcript source")
             return transcript, "whisper"
+            
     except Exception as e:
         logger.error(f"Whisper transcription failed: {str(e)}")
     

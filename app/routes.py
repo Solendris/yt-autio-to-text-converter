@@ -1,24 +1,59 @@
+"""
+API routes for the YouTube Summarizer application.
+Handles transcript generation, summarization, and hybrid outputs.
+"""
 import time
-from flask import Blueprint, request, jsonify, send_file
-from app.config import Config
-from app.utils.logger import logger
-from app.services.youtube_service import get_transcript, extract_video_id, get_video_title, get_diarized_transcript
-from app.services.summarization_service import summarize_with_perplexity, summarize_with_gemini
-from app.services.pdf_service import create_pdf_summary, create_hybrid_pdf
-from io import BytesIO
 import os
 import subprocess
-import json
+from io import BytesIO
 from datetime import datetime
+from flask import Blueprint, request, send_file
+
+from app.config import Config
+from app.utils.logger import logger
+from app.utils.responses import success_response, error_response, validation_error_response
+from app.validators import (
+    validate_youtube_url,
+    validate_transcript_file,
+    validate_summary_type,
+    validate_output_format
+)
+from app.services.youtube_service import (
+    get_transcript,
+    extract_video_id,
+    get_video_title,
+    get_diarized_transcript
+)
+from app.services.summarization_service import (
+    summarize_with_perplexity,
+    summarize_with_gemini
+)
+from app.services.pdf_service import create_pdf_summary, create_hybrid_pdf
 from app.utils.parsers import parse_transcript_file
+from app.constants import (
+    ERROR_NO_URL,
+    ERROR_NO_FILE,
+    ERROR_NO_URL_OR_FILE,
+    ERROR_TRANSCRIPT_FAILED,
+    ERROR_SUMMARIZATION_FAILED,
+    SUCCESS_TRANSCRIPT_READY,
+    SUCCESS_SUMMARY_READY,
+    DEBUG_ENDPOINT_TIMEOUT,
+    COOKIES_FILENAME
+)
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
+
+# ============================================================================
+# Health & Debug Endpoints
+# ============================================================================
+
 @bp.route('/health', methods=['GET'])
 def health():
+    """Health check endpoint."""
     logger.debug("Health check")
-    return jsonify({
-        'status': 'ok',
+    return success_response({
         'version': '1.0.0',
         'sections': ['transcript', 'summarize'],
         'perplexity_configured': Config.USE_PERPLEXITY,
@@ -26,145 +61,286 @@ def health():
         'ai_provider': 'perplexity' if Config.USE_PERPLEXITY else 'gemini'
     })
 
-@bp.route('/transcript', methods=['POST'])
-def get_transcript_only():
-    """SEKCJA 1: ONLY Transkrypt (bez streszczenia)"""
+
+@bp.route('/debug', methods=['GET'])
+def debug_info():
+    """Debug endpoint to check yt-dlp version and environment."""
     try:
-        data = request.get_json()
-        video_url = data.get('url')
-        use_diarization = data.get('diarization', False)
+        import yt_dlp
+        yt_dlp_version = yt_dlp.version.__version__
         
-        if not video_url:
-            return jsonify({'error': 'No URL provided'}), 400
-        
-        logger.info(f"Processing transcript request: {video_url} (Diarization: {use_diarization})")
+        # Try to fetch formats for a sample video
+        video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        formats_info = "N/A"
         
         try:
-            if use_diarization:
-                transcript, source = get_diarized_transcript(video_url)
-            else:
-                # Standard flow
-                transcript, source = get_transcript(video_url)
+            cmd = ["yt-dlp", "-F", video_url]
             
-            if not transcript:
-                logger.error(f"Transcript failed: {source}")
-                return jsonify({'error': source}), 400
+            # Use cookies if available
+            cookies_path = os.path.join(os.getcwd(), COOKIES_FILENAME)
+            if os.path.exists(cookies_path):
+                cmd.extend(["--cookiefile", cookies_path])
             
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=DEBUG_ENDPOINT_TIMEOUT
+            )
+            formats_info = result.stdout[:1000]
         except Exception as e:
-            logger.error(f"Transcript generation error: {str(e)}")
-            return jsonify({'error': f"Transcript generation failed: {str(e)}"}), 500
+            formats_info = f"Error fetching formats: {str(e)}"
         
-        logger.info(f"[OK] Transcript ready - source: {source}")
+        return success_response({
+            'yt_dlp_version': yt_dlp_version,
+            'ffmpeg_installed': subprocess.run(
+                ["ffmpeg", "-version"],
+                capture_output=True
+            ).returncode == 0,
+            'cookies_detected': os.path.exists(
+                os.path.join(os.getcwd(), COOKIES_FILENAME)
+            ),
+            'env': {
+                k: v for k, v in os.environ.items()
+                if "KEY" not in k.upper() and "SECRET" not in k.upper()
+            },
+            'sample_formats': formats_info
+        })
+    except Exception as e:
+        return error_response(str(e), status_code=500)
+
+
+# ============================================================================
+# Transcript Endpoints
+# ============================================================================
+
+@bp.route('/transcript', methods=['POST'])
+def get_transcript_only():
+    """Generate transcript only (without summarization)."""
+    try:
+        data = request.get_json()
+        if not data:
+            return validation_error_response('body', 'Invalid JSON')
         
-        # Return JSON with content instead of file download
-        return jsonify({
-            'status': 'ok',
+        video_url = data.get('url', '').strip()
+        use_diarization = data.get('diarization', False)
+        
+        # Validate URL
+        if not video_url:
+            return error_response(ERROR_NO_URL)
+        
+        is_valid, error_msg = validate_youtube_url(video_url)
+        if not is_valid:
+            return validation_error_response('url', error_msg)
+        
+        logger.info(
+            f"Processing transcript request: {video_url} "
+            f"(Diarization: {use_diarization})"
+        )
+        
+        # Generate transcript
+        if use_diarization:
+            transcript, source = get_diarized_transcript(video_url)
+        else:
+            transcript, source = get_transcript(video_url)
+        
+        if not transcript:
+            logger.error(f"Transcript failed: {source}")
+            return error_response(source or ERROR_TRANSCRIPT_FAILED)
+        
+        logger.info(f"[OK] {SUCCESS_TRANSCRIPT_READY} - source: {source}")
+        
+        return success_response({
             'transcript': transcript,
             'source': source,
             'filename': f'transcript_{extract_video_id(video_url)}_{source}.txt'
-        })
+        }, message=SUCCESS_TRANSCRIPT_READY)
     
     except Exception as e:
         logger.error(f"Transcript endpoint error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return error_response(str(e), status_code=500)
+
+
+@bp.route('/upload-transcript', methods=['POST'])
+def validate_transcript():
+    """Validate uploaded transcript file."""
+    try:
+        logger.info(">>> ENDPOINT: /api/upload-transcript <<<")
+        
+        if 'file' not in request.files:
+            return error_response(ERROR_NO_FILE)
+        
+        file = request.files['file']
+        
+        # Validate file
+        is_valid, error_msg = validate_transcript_file(file)
+        if not is_valid:
+            return validation_error_response('file', error_msg)
+        
+        logger.info(f"[PROCESS] Validating file: {file.filename}")
+        
+        # Read and validate content
+        content = file.read().decode('utf-8')
+        file_size = len(content)
+        word_count = len(content.split())
+        
+        logger.info(f"[OK] File validated")
+        logger.info(f"[STATS] Size: {file_size} characters | Words: {word_count}")
+        
+        preview = content[:200] + '...' if len(content) > 200 else content
+        
+        return success_response({
+            'filename': file.filename,
+            'size': file_size,
+            'words': word_count,
+            'preview': preview
+        })
+    
+    except Exception as e:
+        logger.error(f"Upload validation error: {str(e)}")
+        return error_response(str(e), status_code=500)
+
+
+# ============================================================================
+# Helper Functions for Summarization
+# ============================================================================
+
+def _get_transcript_from_request():
+    """Extract transcript from request (either from URL or file upload)."""
+    # Handle JSON requests
+    if request.is_json:
+        data = request.json
+        video_url = data.get('url', '').strip()
+        summary_type = data.get('type', 'normal')
+        output_format = data.get('format', 'pdf')
+        transcript_file = None
+        
+    # Handle form data (file upload)
+    else:
+        video_url = request.form.get('url', '').strip()
+        summary_type = request.form.get('type', 'normal')
+        output_format = request.form.get('format', 'pdf')
+        transcript_file = request.files.get('transcript_file')
+    
+    # Validate and normalize
+    summary_type = validate_summary_type(summary_type)
+    output_format = validate_output_format(output_format)
+    
+    # Option 1: File upload
+    if transcript_file:
+        logger.info(">>> ENDPOINT: /api/summarize (FILE UPLOAD MODE) <<<")
+        
+        is_valid, error_msg = validate_transcript_file(transcript_file)
+        if not is_valid:
+            return None, None, None, None, error_msg
+        
+        try:
+            content = transcript_file.read().decode('utf-8')
+            transcript = parse_transcript_file(content)
+            source = "file_upload"
+            video_id = 'manual_upload'
+            title = transcript_file.filename.replace('.txt', '')
+            
+            logger.info(f"[OK] Transcript extracted ({len(transcript)} chars)")
+            return transcript, source, video_id, title, None
+            
+        except Exception as e:
+            return None, None, None, None, f'Could not read file: {e}'
+    
+    # Option 2: Video URL
+    elif video_url:
+        logger.info(">>> ENDPOINT: /api/summarize (VIDEO URL MODE) <<<")
+        logger.info(f"Video: {video_url} | Type: {summary_type} | Format: {output_format}")
+        
+        is_valid, error_msg = validate_youtube_url(video_url)
+        if not is_valid:
+            return None, None, None, None, error_msg
+        
+        transcript, source = get_transcript(video_url)
+        
+        if not transcript:
+            logger.error(f"Summarize: Transcript failed - {source}")
+            return None, None, None, None, source or ERROR_TRANSCRIPT_FAILED
+        
+        video_id = extract_video_id(video_url)
+        title = get_video_title(video_url) or f'Video {video_id}'
+        
+        logger.info(f"Transcript ready ({len(transcript)} chars)")
+        return transcript, source, video_id, title, None
+    
+    # No transcript or URL provided
+    else:
+        return None, None, None, None, ERROR_NO_URL_OR_FILE
+
+
+def _generate_summary(transcript: str, summary_type: str) -> tuple[str, str]:
+    """Generate summary using configured AI service."""
+    logger.info(f"[START] Summarization process ({summary_type} mode)")
+    
+    summary = None
+    
+    if Config.USE_PERPLEXITY:
+        logger.info("Using Perplexity API...")
+        summary = summarize_with_perplexity(transcript, summary_type)
+        
+        if not summary and Config.GOOGLE_API_KEY:
+            logger.warning("Perplexity failed, trying Gemini...")
+            summary = summarize_with_gemini(transcript, summary_type)
+    else:
+        logger.info("Using Gemini API...")
+        summary = summarize_with_gemini(transcript, summary_type)
+    
+    if not summary:
+        logger.error("All summarization APIs failed")
+        return None, ERROR_SUMMARIZATION_FAILED
+    
+    logger.info(f"[OK] Summary generated ({len(summary)} characters)")
+    return summary, None
+
+
+# ============================================================================
+# Summarization Endpoints
+# ============================================================================
 
 @bp.route('/summarize', methods=['POST'])
 def summarize_transcript():
-    """SEKCJA 2: Podsumuj transkrypt (z URL VIDEO lub z UPLOADED PLIKU)"""
+    """Summarize transcript from video URL or uploaded file."""
     try:
         start_time = time.time()
         
-        # Obsługuj zarówno JSON jak i multipart/form-data
+        # Get summary type and output format
         if request.is_json:
-            data = request.json
-            video_url = data.get('url', '').strip()
-            summary_type = data.get('type', 'normal').lower()
-            output_format = data.get('format', 'pdf').lower()
-            transcript_file = None
-            transcript = None
+            summary_type = validate_summary_type(request.json.get('type'))
+            output_format = validate_output_format(request.json.get('format'))
+            video_url = request.json.get('url', '').strip()
         else:
-            # File upload via form
+            summary_type = validate_summary_type(request.form.get('type'))
+            output_format = validate_output_format(request.form.get('format'))
             video_url = request.form.get('url', '').strip()
-            summary_type = request.form.get('type', 'normal').lower()
-            output_format = request.form.get('format', 'pdf').lower()
-            transcript_file = request.files.get('transcript_file')
-            transcript = None
         
-        if summary_type not in ['concise', 'normal', 'detailed']:
-            summary_type = 'normal'
+        # Get transcript
+        transcript, source, video_id, title, error = _get_transcript_from_request()
+        if error:
+            return error_response(error)
         
-        # OPCJA 1: Transkrypt z pliku (jeśli wczytany)
-        if transcript_file:
-            logger.info(f">>> ENDPOINT: /api/summarize (FILE UPLOAD MODE) <<<")
-            try:
-                content = transcript_file.read().decode('utf-8')
-                transcript = parse_transcript_file(content)
-                source = "file_upload"
-                logger.info(f"[OK] Transcript extracted ({len(transcript)} chars)")
-            except Exception as e:
-                return jsonify({'error': f'Could not read file: {e}'}), 400
+        # Generate summary
+        summary, error = _generate_summary(transcript, summary_type)
+        if error:
+            return error_response(error, status_code=500)
         
-        # OPCJA 2: Transkrypt z URL video (jeśli nie wczytano pliku)
-        elif video_url:
-            logger.info(f">>> ENDPOINT: /api/summarize (VIDEO URL MODE) <<<")
-            logger.info(f"Video: {video_url} | Type: {summary_type} | Format: {output_format}")
-            
-            transcript, source = get_transcript(video_url)
-            
-            if not transcript:
-                logger.error(f"Summarize: Transcript failed - {source}")
-                return jsonify({'error': source}), 400
-            
-            logger.info(f"Transcript ready ({len(transcript)} chars)")
-        
-        # Brak transkryptu i URL
-        else:
-            logger.warning("Summarize: No URL or file provided")
-            return jsonify({'error': 'Provide either video URL or transcript file'}), 400
-        
-        # ═══════════════════════════════════════════════════════════════════
-        # GENERUJ STRESZCZENIE
-        # ═══════════════════════════════════════════════════════════════════
-        
-        logger.info(f"[START] Summarization process ({summary_type} mode)")
-        
-        if Config.USE_PERPLEXITY:
-            logger.info("Using Perplexity API...")
-            summary = summarize_with_perplexity(transcript, summary_type)
-            if not summary:
-                logger.warning("Perplexity failed, trying Gemini...")
-                if Config.GOOGLE_API_KEY:
-                    summary = summarize_with_gemini(transcript, summary_type)
-        else:
-            logger.info("Using Gemini API...")
-            summary = summarize_with_gemini(transcript, summary_type)
-        
-        if not summary:
-            logger.error("All summarization APIs failed")
-            return jsonify({'error': 'Failed to generate summary'}), 500
-        
-        logger.info(f"[OK] Summary generated ({len(summary)} characters)")
-        
-        # Wyciągnij video_id jeśli dostępny
-        if video_url:
-            video_id = extract_video_id(video_url)
-            # Try to fetch real title
-            real_title = get_video_title(video_url)
-            title = real_title if real_title else f'Video {video_id}'
-        else:
-            video_id = 'manual_upload'
-            title = transcript_file.filename.replace('.txt', '') if transcript_file else 'Transcript Summary'
-        
-        # ═══════════════════════════════════════════════════════════════════
-        # EKSPORTUJ WYNIK
-        # ═══════════════════════════════════════════════════════════════════
-        
+        # Generate output based on format
         if output_format == 'pdf':
-            logger.info(f"[EXPORT] Creating PDF...")
-            pdf_buffer = create_pdf_summary(title, summary, video_url or 'Manual Upload', source, summary_type)
+            logger.info("[EXPORT] Creating PDF...")
+            pdf_buffer = create_pdf_summary(
+                title, summary, video_url or 'Manual Upload',
+                source, summary_type
+            )
             
             elapsed_time = time.time() - start_time
-            logger.info(f"[COMPLETE] Summary PDF ready for download ({elapsed_time:.1f}s total)")
+            logger.info(
+                f"[COMPLETE] Summary PDF ready for download "
+                f"({elapsed_time:.1f}s total)"
+            )
             
             return send_file(
                 pdf_buffer,
@@ -172,18 +348,19 @@ def summarize_transcript():
                 as_attachment=True,
                 download_name=f'summary_{video_id}_{summary_type}.pdf'
             )
-        else:
-            logger.info(f"[EXPORT] Creating TXT...")
+        
+        else:  # txt format
+            logger.info("[EXPORT] Creating TXT...")
             content = f"""SUMMARY - {summary_type.upper()}
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 Source: {source.upper()}
-{'Video: ' + video_url if video_url else 'File: ' + transcript_file.filename}
+{'Video: ' + video_url if video_url else 'File: ' + title}
 
-{"="*80}
+{'=' * 80}
 
 {summary}
 
-{"="*80}
+{'=' * 80}
 
 Generated by YouTube Summarizer
 """
@@ -192,7 +369,10 @@ Generated by YouTube Summarizer
             buffer.seek(0)
             
             elapsed_time = time.time() - start_time
-            logger.info(f"[COMPLETE] Summary TXT ready for download ({elapsed_time:.1f}s total)")
+            logger.info(
+                f"[COMPLETE] Summary TXT ready for download "
+                f"({elapsed_time:.1f}s total)"
+            )
             
             return send_file(
                 buffer,
@@ -205,44 +385,48 @@ Generated by YouTube Summarizer
         logger.error(f"Summarize endpoint error: {str(e)}")
         import traceback
         logger.error(f"[TRACEBACK]\n{traceback.format_exc()}")
-        return jsonify({'error': str(e)}), 500
+        return error_response(str(e), status_code=500)
+
 
 @bp.route('/hybrid', methods=['POST'])
 def hybrid_output():
-    """HYBRID: Transkrypt + Streszczenie w jednym PDF"""
+    """Generate hybrid PDF with transcript and summary."""
     try:
         data = request.json
+        if not data:
+            return validation_error_response('body', 'Invalid JSON')
+        
         video_url = data.get('url', '').strip()
-        summary_type = data.get('type', 'normal').lower()
+        summary_type = validate_summary_type(data.get('type'))
         
         if not video_url:
-            logger.warning("Hybrid: No URL")
-            return jsonify({'error': 'No video URL provided'}), 400
+            return error_response(ERROR_NO_URL)
         
-        logger.info(f">>> ENDPOINT: /api/hybrid <<<")
+        is_valid, error_msg = validate_youtube_url(video_url)
+        if not is_valid:
+            return validation_error_response('url', error_msg)
+        
+        logger.info(">>> ENDPOINT: /api/hybrid <<<")
         logger.info(f"Video: {video_url} | Type: {summary_type}")
         
+        # Get transcript
         transcript, source = get_transcript(video_url)
-        
         if not transcript:
             logger.error(f"Hybrid: Transcript failed - {source}")
-            return jsonify({'error': source}), 400
+            return error_response(source or ERROR_TRANSCRIPT_FAILED)
         
         logger.info(f"Transcript ready ({len(transcript)} chars)")
         
-        if Config.USE_PERPLEXITY:
-            summary = summarize_with_perplexity(transcript, summary_type)
-        else:
-            summary = summarize_with_gemini(transcript, summary_type)
+        # Generate summary
+        summary, error = _generate_summary(transcript, summary_type)
+        if error:
+            return error_response(error, status_code=500)
         
-        if not summary:
-            logger.error("Hybrid: Summarization failed")
-            return jsonify({'error': 'Failed to generate summary'}), 500
-        
-        logger.info(f"[OK] Summary generated ({len(summary)} characters)")
-        
+        # Create hybrid PDF
         title = data.get('title', f'Video {extract_video_id(video_url)}')
-        pdf_buffer = create_hybrid_pdf(title, summary, transcript, video_url, source, summary_type)
+        pdf_buffer = create_hybrid_pdf(
+            title, summary, transcript, video_url, source, summary_type
+        )
         
         return send_file(
             pdf_buffer,
@@ -253,76 +437,4 @@ def hybrid_output():
     
     except Exception as e:
         logger.error(f"Hybrid endpoint error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@bp.route('/upload-transcript', methods=['POST'])
-def validate_transcript():
-    """Waliduj wczytany plik transkryptu"""
-    try:
-        logger.info(f">>> ENDPOINT: /api/upload-transcript <<<")
-        
-        if 'file' not in request.files:
-            logger.warning("No file provided")
-            return jsonify({'error': 'No file provided'}), 400
-        
-        file = request.files['file']
-        
-        if file.filename == '':
-            logger.warning("Empty filename")
-            return jsonify({'error': 'Empty filename'}), 400
-        
-        if not file.filename.endswith('.txt'):
-            logger.warning(f"Invalid file type: {file.filename}")
-            return jsonify({'error': 'Only .txt files allowed'}), 400
-        
-        logger.info(f"[PROCESS] Validating file: {file.filename}")
-        
-        # Odczytaj plik
-        content = file.read().decode('utf-8')
-        file_size = len(content)
-        word_count = len(content.split())
-        
-        logger.info(f"[OK] File validated")
-        logger.info(f"[STATS] Size: {file_size} characters | Words: {word_count}")
-        
-        return jsonify({
-            'filename': file.filename,
-            'size': file_size,
-            'words': word_count,
-            'preview': content[:200] + '...' if len(content) > 200 else content
-        })
-    
-    except Exception as e:
-        logger.error(f"Upload validation error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@bp.route('/debug', methods=['GET'])
-def debug_info():
-    """Punkt kontrolny do sprawdzenia wersji yt-dlp i środowiska"""
-    try:
-        import yt_dlp
-        yt_dlp_version = yt_dlp.version.__version__
-        
-        # Próba pobrania formatów dla przykładowego wideo (Rick Roll)
-        video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        formats_info = "N/A"
-        try:
-            result = subprocess.run(
-                ["yt-dlp", "-F", video_url], 
-                capture_output=True, 
-                text=True, 
-                timeout=10
-            )
-            formats_info = result.stdout[:1000] # Ograniczamy log
-        except Exception as e:
-            formats_info = f"Error fetching formats: {str(e)}"
-
-        return jsonify({
-            'yt_dlp_version': yt_dlp_version,
-            'ffmpeg_installed': subprocess.run(["ffmpeg", "-version"], capture_output=True).returncode == 0,
-            'cookies_detected': os.path.exists(os.path.join(os.getcwd(), 'cookies.txt')),
-            'env': {k: v for k, v in os.environ.items() if "KEY" not in k.upper() and "SECRET" not in k.upper()},
-            'sample_formats': formats_info
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return error_response(str(e), status_code=500)
