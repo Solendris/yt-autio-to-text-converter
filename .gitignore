@@ -7,13 +7,10 @@
 venv/
 
 # Python cache and bytecode
-__pycache__/
-*.py[cod]
-*$py.class
+**/__pycache__/
 
 # Python logs
-logs/
-*.log
+**/*.log*
 
 # ============================================================================
 # Frontend (Node.js/Vite)
@@ -31,15 +28,6 @@ frontend/.vite/
 
 # Local env files
 frontend/*.local
-
-# Logs
-frontend/logs
-frontend/*.log
-frontend/npm-debug.log*
-frontend/yarn-debug.log*
-frontend/yarn-error.log*
-frontend/pnpm-debug.log*
-frontend/lerna-debug.log*
 
 # ============================================================================
 # IDE & Editors
@@ -65,4 +53,9 @@ frontend/lerna-debug.log*
 
 .DS_Store
 Thumbs.db
+
+# ============================================================================
+# Scripts
+# ============================================================================
+
 fix_pep8.py
