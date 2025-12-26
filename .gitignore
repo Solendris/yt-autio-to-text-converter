@@ -1,17 +1,67 @@
+# ============================================================================
+# Backend (Python/Flask)
+# ============================================================================
+
 # Environment & Secrets
 .env
 venv/
 
-# Python logs and cache
-logs/*.log
+# Python cache and bytecode
 __pycache__/
 *.py[cod]
+*$py.class
 
-# Node / Vite
+# Python logs
+logs/
+*.log
+
+# ============================================================================
+# Frontend (Node.js/Vite)
+# ============================================================================
+
+# Dependencies
 frontend/node_modules/
-frontend/dist/
-frontend/.wasm/
 
+# Build outputs
+frontend/dist/
+frontend/dist-ssr/
+
+# Vite
+frontend/.vite/
+
+# Local env files
+frontend/*.local
+
+# Logs
+frontend/logs
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/lerna-debug.log*
+
+# ============================================================================
+# IDE & Editors
+# ============================================================================
+
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+
+# JetBrains IDEs
+.idea
+
+# Visual Studio
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ============================================================================
 # OS
+# ============================================================================
+
 .DS_Store
 Thumbs.db
