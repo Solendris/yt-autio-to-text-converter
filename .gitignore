@@ -65,3 +65,4 @@ frontend/lerna-debug.log*
 
 .DS_Store
 Thumbs.db
+fix_pep8.py

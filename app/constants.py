@@ -101,11 +101,11 @@ PERPLEXITY_SYSTEM_PROMPT = (
     "Process the ENTIRE transcript provided and maintain important details."
 )
 
-# Gemini Configuration  
+# Gemini Configuration
 GEMINI_MODEL = "gemini-2.0-flash-exp"
 GEMINI_TEMPERATURE = 0.7
 
 # Format Detection Patterns
-SPEAKER_REGEX_PATTERN = r'^(\[\d{1,2}:\d{2}(?::\d{2})?\])\s*(Speaker \d+|[\w\s]+):(.*)' 
+SPEAKER_REGEX_PATTERN = r'^(\[\d{1,2}:\d{2}(?::\d{2})?\])\s*(Speaker \d+|[\w\s]+):(.*)'
 TIMESTAMP_PATTERN = r'\[\d{1,2}:\d{2}(?::\d{2})?\]'
 SEPARATOR_PATTERN = '=' * 20

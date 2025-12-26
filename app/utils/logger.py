@@ -3,6 +3,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 
+
 def setup_logger():
     log_dir = 'logs'
     if not os.path.exists(log_dir):
@@ -24,7 +25,7 @@ def setup_logger():
         backupCount=3
     )
     file_handler.setFormatter(log_formatter)
-    
+
     # Avoid adding multiple handlers if setup is called multiple times
     if not logger.handlers:
         logger.addHandler(file_handler)
@@ -35,5 +36,6 @@ def setup_logger():
         logger.addHandler(console_handler)
 
     return logger
+
 
 logger = setup_logger()

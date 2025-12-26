@@ -30,6 +30,7 @@ BOLD_URLS = [
     'https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/fonts/lato-bold/lato-bold.ttf'
 ]
 
+
 def download_font(urls, path):
     """Download font from a list of mirrors."""
     if os.path.exists(path):
@@ -50,14 +51,16 @@ def download_font(urls, path):
         except Exception as e:
             logger.warning(f"Failed to download from {url}: {e}")
             continue
-    
+
     logger.error(f"All download attempts failed for {path}")
     return False
+
 
 def ensure_fonts_exist():
     """Ensure font files exist."""
     download_font(REGULAR_URLS, REGULAR_FONT_PATH)
     download_font(BOLD_URLS, BOLD_FONT_PATH)
+
 
 def register_fonts():
     """Register the TrueType fonts."""
@@ -66,10 +69,10 @@ def register_fonts():
         if os.path.exists(REGULAR_FONT_PATH):
             pdfmetrics.registerFont(TTFont(REGULAR_FONT_NAME, REGULAR_FONT_PATH))
             registered = True
-            
+
         if os.path.exists(BOLD_FONT_PATH):
             pdfmetrics.registerFont(TTFont(BOLD_FONT_NAME, BOLD_FONT_PATH))
-            
+
         if registered:
             try:
                 pdfmetrics.registerFontFamily(
@@ -81,7 +84,7 @@ def register_fonts():
                 )
             except Exception:
                 pass
-            
+
             logger.info(f"Registered fonts: {REGULAR_FONT_NAME}")
             return True
         else:
@@ -91,11 +94,13 @@ def register_fonts():
         logger.error(f"Error registering font: {e}")
         return False
 
+
 # Initialize fonts on module load
 ensure_fonts_exist()
 FONTS_REGISTERED = register_fonts()
 MAIN_FONT = REGULAR_FONT_NAME if FONTS_REGISTERED else 'Helvetica'
 BOLD_FONT = BOLD_FONT_NAME if (FONTS_REGISTERED and os.path.exists(BOLD_FONT_PATH)) else 'Helvetica-Bold'
+
 
 def parse_markdown(text):
     """Convert Markdown text to ReportLab XML/HTML format."""
@@ -115,22 +120,23 @@ def parse_markdown(text):
     # 3. Handle Italics (*text* or _text_)
     # Note: ReportLab uses <i> tag
     text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
-    
-    # 4. Handle Headers (# Header) - make them bold and maybe bigger? 
+
+    # 4. Handle Headers (# Header) - make them bold and maybe bigger?
     # For now just bold, as we are creating Flowables usually
     text = re.sub(r'^#+\s*(.*?)$', r'<b>\1</b><br/>', text, flags=re.MULTILINE)
 
     return text
 
+
 def _get_pdf_styles(title_size=24, subtitle_size=10, body_size=10):
     """Helper to generate common PDF styles."""
     styles = getSampleStyleSheet()
-    
+
     # Update standard styles to use our font
     for style_name in ['Normal', 'Heading1', 'Heading2', 'Heading3', 'BodyText']:
         if style_name in styles:
             styles[style_name].fontName = MAIN_FONT
-            
+
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
@@ -140,7 +146,7 @@ def _get_pdf_styles(title_size=24, subtitle_size=10, body_size=10):
         alignment=TA_CENTER,
         fontName=MAIN_FONT
     )
-    
+
     subtitle_style = ParagraphStyle(
         'CustomSubtitle',
         parent=styles['Normal'],
@@ -150,7 +156,7 @@ def _get_pdf_styles(title_size=24, subtitle_size=10, body_size=10):
         alignment=TA_CENTER,
         fontName=MAIN_FONT
     )
-    
+
     body_style = ParagraphStyle(
         'CustomBody',
         parent=styles['BodyText'],
@@ -160,43 +166,44 @@ def _get_pdf_styles(title_size=24, subtitle_size=10, body_size=10):
         leading=body_size * 1.4,
         fontName=MAIN_FONT
     )
-    
+
     return styles, title_style, subtitle_style, body_style
+
 
 def create_pdf_summary(title, summary, video_url, transcript_source, summary_type):
     """Create PDF summary with Polish character support and Markdown parsing."""
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
-    
+
     styles, title_style, subtitle_style, body_style = _get_pdf_styles(title_size=24, subtitle_size=10, body_size=10)
-    
+
     story = []
-    
+
     title_safe = parse_markdown(title)
-    
+
     story.append(Paragraph("YouTube Video Summary", title_style))
     story.append(Spacer(1, 0.1*inch))
-    
+
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     story.append(Paragraph(f"<b>Generated:</b> {now}", subtitle_style))
     story.append(Paragraph(f"<b>Transcript source:</b> {transcript_source.upper()}", subtitle_style))
     story.append(Paragraph(f"<b>Summary type:</b> {summary_type.upper()}", subtitle_style))
     story.append(Paragraph(f"<b>Video:</b> {title_safe}", subtitle_style))
     story.append(Spacer(1, 0.2*inch))
-    
+
     story.append(Paragraph(f"<b>{title_safe}</b>", styles['Heading2']))
     story.append(Spacer(1, 0.15*inch))
-    
+
     story.append(Paragraph("<b>Summary:</b>", styles['Heading3']))
     story.append(Spacer(1, 0.1*inch))
-    
+
     # Process summary lines for lists vs paragraphs
     summary_lines = summary.split('\n')
     for line in summary_lines:
         line = line.strip()
         if not line:
             continue
-            
+
         # Detect list items
         if line.startswith('- ') or line.startswith('* '):
             # Remove the identifier and leading space
@@ -207,17 +214,18 @@ def create_pdf_summary(title, summary, video_url, transcript_source, summary_typ
         else:
             parsed_content = parse_markdown(line)
             story.append(Paragraph(parsed_content, body_style))
-            
+
     story.append(Spacer(1, 0.3*inch))
     story.append(Paragraph(
         "<font size=8 color=#9CA3AF>Generated by YouTube Summarizer | Powered by Perplexity AI & Whisper</font>",
         ParagraphStyle('Footer', parent=styles['Normal'], alignment=TA_CENTER, fontSize=8, fontName=MAIN_FONT)
     ))
-    
+
     doc.build(story)
     logger.info("[OK] Summary PDF created")
     buffer.seek(0)
     return buffer
+
 
 def create_transcript_file(transcript, source):
     """Create text file (UTF-8)"""
@@ -233,20 +241,21 @@ Transcript Source: {source.upper()}
 
 Generated by YouTube Summarizer
 """
-    
+
     buffer = BytesIO()
     buffer.write(content.encode('utf-8'))
     buffer.seek(0)
     logger.info("[OK] Transcript file created")
     return buffer
 
+
 def create_hybrid_pdf(title, summary, transcript, video_url, transcript_source, summary_type):
     """Create Hybrid PDF"""
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
-    
+
     styles, title_style, subtitle_style, body_style = _get_pdf_styles(title_size=20, subtitle_size=9, body_size=9)
-    
+
     story = []
 
     story.append(Paragraph("YouTube Video Summary & Transcript", title_style))
@@ -254,19 +263,23 @@ def create_hybrid_pdf(title, summary, transcript, video_url, transcript_source, 
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     story.append(Paragraph(f"<b>Generated:</b> {now}", subtitle_style))
-    story.append(Paragraph(f"<b>Transcript:</b> {transcript_source.upper()} | <b>Summary type:</b> {summary_type.upper()}", subtitle_style))
+    subtitle_text = (
+        f"<b>Transcript:</b> {transcript_source.upper()} | "
+        f"<b>Summary type:</b> {summary_type.upper()}"
+    )
+    story.append(Paragraph(subtitle_text, subtitle_style))
     story.append(Spacer(1, 0.2*inch))
-    
+
     story.append(Paragraph("<b>SUMMARY</b>", styles['Heading2']))
     story.append(Spacer(1, 0.1*inch))
-    
+
     # Parse summary
     summary_lines = summary.split('\n')
     for line in summary_lines:
         line = line.strip()
         if not line:
             continue
-            
+
         if line.startswith('- ') or line.startswith('* '):
             content = line[2:]
             parsed_content = parse_markdown(content)
@@ -274,17 +287,17 @@ def create_hybrid_pdf(title, summary, transcript, video_url, transcript_source, 
         else:
             parsed_content = parse_markdown(line)
             story.append(Paragraph(parsed_content, body_style))
-    
+
     story.append(PageBreak())
-    
+
     story.append(Paragraph("<b>FULL TRANSCRIPT</b>", styles['Heading2']))
     story.append(Spacer(1, 0.1*inch))
-    
-    # Transcript is usually just text, but we can do basic parsing if needed. 
+
+    # Transcript is usually just text, but we can do basic parsing if needed.
     # Usually huge block of text, better minimal parsing.
     transcript_safe = parse_markdown(transcript).replace('\n', '<br/>')
     story.append(Paragraph(transcript_safe, body_style))
-    
+
     doc.build(story)
     logger.info("[OK] Hybrid PDF created")
     buffer.seek(0)
