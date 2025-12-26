@@ -3,9 +3,9 @@ import requests
 import re
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, ListFlowable, ListItem
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from io import BytesIO
@@ -79,7 +79,7 @@ def register_fonts():
                     italic=REGULAR_FONT_NAME,
                     boldItalic=BOLD_FONT_NAME if os.path.exists(BOLD_FONT_PATH) else REGULAR_FONT_NAME
                 )
-            except:
+            except Exception:
                 pass
             
             logger.info(f"Registered fonts: {REGULAR_FONT_NAME}")
@@ -248,12 +248,10 @@ def create_hybrid_pdf(title, summary, transcript, video_url, transcript_source, 
     styles, title_style, subtitle_style, body_style = _get_pdf_styles(title_size=20, subtitle_size=9, body_size=9)
     
     story = []
-    
-    title_safe = parse_markdown(title)
-    
+
     story.append(Paragraph("YouTube Video Summary & Transcript", title_style))
     story.append(Spacer(1, 0.1*inch))
-    
+
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     story.append(Paragraph(f"<b>Generated:</b> {now}", subtitle_style))
     story.append(Paragraph(f"<b>Transcript:</b> {transcript_source.upper()} | <b>Summary type:</b> {summary_type.upper()}", subtitle_style))

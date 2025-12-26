@@ -148,9 +148,9 @@ def get_youtube_transcript(video_id: str) -> Tuple[Optional[str], Optional[str]]
         
         try:
             transcript = transcript_list.find_transcript(['en'])
-        except:
+        except Exception:
             transcript = (
-                transcript_list.find_manually_created_transcript() or 
+                transcript_list.find_manually_created_transcript() or
                 transcript_list.find_generated_transcript()
             )
         
@@ -207,7 +207,7 @@ def download_audio_from_youtube(video_url: str) -> Optional[str]:
             except Exception as e:
                 if attempt == MAX_DOWNLOAD_ATTEMPTS:
                     raise
-                logger.warning(f"Attempt {attempt} failed, retrying...")
+                logger.warning(f"Attempt {attempt} failed ({str(e)}), retrying...")
                 import time
                 time.sleep(DOWNLOAD_RETRY_DELAY)
         

@@ -37,7 +37,6 @@ from app.constants import (
     ERROR_TRANSCRIPT_FAILED,
     ERROR_SUMMARIZATION_FAILED,
     SUCCESS_TRANSCRIPT_READY,
-    SUCCESS_SUMMARY_READY,
     DEBUG_ENDPOINT_TIMEOUT,
     COOKIES_FILENAME
 )
@@ -134,8 +133,8 @@ def get_transcript_only():
             return validation_error_response('url', error_msg)
         
         logger.info(
-            f"Processing transcript request: {video_url} "
-            f"(Diarization: {use_diarization})"
+            "Processing transcript request: {} "
+            "(Diarization: {})".format(video_url, use_diarization)
         )
         
         # Generate transcript
@@ -184,7 +183,7 @@ def validate_transcript():
         file_size = len(content)
         word_count = len(content.split())
         
-        logger.info(f"[OK] File validated")
+        logger.info("[OK] File validated")
         logger.info(f"[STATS] Size: {file_size} characters | Words: {word_count}")
         
         preview = content[:200] + '...' if len(content) > 200 else content

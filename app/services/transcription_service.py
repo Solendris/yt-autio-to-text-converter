@@ -5,6 +5,7 @@ from app.utils.formatting import format_seconds
 
 whisper_model = None
 
+
 def init_whisper():
     global whisper_model
     if whisper_model is None:
@@ -13,13 +14,14 @@ def init_whisper():
         logger.info("[OK] Whisper model loaded")
     return whisper_model
 
+
 def transcribe_with_whisper(audio_path):
     try:
-        logger.info(f"Transcribing with Whisper...")
-        
+        logger.info("Transcribing with Whisper...")
+
         model = init_whisper()
         segments, info = model.transcribe(audio_path, language="pl", beam_size=5)
-        
+
         formatted_lines = []
         for segment in segments:
             # Whisper segments usually have 'start', 'end', 'text'
@@ -27,18 +29,18 @@ def transcribe_with_whisper(audio_path):
             if text:
                 timestamp = format_seconds(segment.start)
                 formatted_lines.append(f"{timestamp} {text}")
-                
+
         transcript = '\n'.join(formatted_lines)
-        
+
         logger.info(f"[OK] Transcription complete ({len(transcript)} characters)")
-        
+
         try:
             os.remove(audio_path)
-        except:
+        except OSError:
             pass
-        
+
         return transcript
-    
+
     except Exception as e:
         logger.error(f"Whisper error: {str(e)}")
         return None

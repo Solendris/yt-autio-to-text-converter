@@ -1,4 +1,3 @@
-import os
 import time
 import google.generativeai as genai
 from app.config import Config
@@ -59,7 +58,7 @@ def transcribe_with_gemini(audio_path):
         # Cleanup (optional, but good practice)
         try:
             audio_file.delete()
-        except:
+        except Exception:
             pass
 
         return transcript, "gemini"
