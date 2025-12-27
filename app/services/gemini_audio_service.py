@@ -1,12 +1,20 @@
 import time
+from typing import Tuple, Optional
 from google import genai
 from app.config import Config
 from app.utils.logger import logger
+from app.constants import GEMINI_MODEL
 
-def transcribe_with_gemini(audio_path):
+
+def transcribe_with_gemini(audio_path: str) -> Tuple[Optional[str], str]:
     """
     Uploads audio to Gemini and requests transcription with speaker identification.
-    Returns: (transcript_text, "gemini")
+
+    Args:
+        audio_path: Path to the local audio file.
+
+    Returns:
+        Tuple of (transcript_text, "gemini") or (None, error_message).
     """
     try:
         if not Config.GOOGLE_API_KEY:
@@ -33,9 +41,6 @@ def transcribe_with_gemini(audio_path):
         logger.info("Audio ready. Generating transcript...")
 
         # 3. Generate Content
-        # Using gemini-flash-latest (aliases to 1.5-flash) for higher quota limits
-        model_id = "gemini-flash-latest"
-        
         prompt = """
         Transcribe this audio in Polish.
         Identify different speakers (e.g., Speaker 1, Speaker 2).
@@ -47,7 +52,7 @@ def transcribe_with_gemini(audio_path):
         """
 
         response = client.models.generate_content(
-            model=model_id,
+            model=GEMINI_MODEL,
             contents=[prompt, audio_file]
         )
 
@@ -55,12 +60,10 @@ def transcribe_with_gemini(audio_path):
         logger.info(f"[OK] Gemini transcription complete ({len(transcript)} chars)")
 
         # Cleanup (optional, but good practice)
-        # Note: The new SDK might handle cleanup differently or not expose a direct delete checked here.
-        # We can try to delete if supported, otherwise skip.
         try:
-             client.files.delete(name=audio_file.name)
-        except Exception:
-            pass
+            client.files.delete(name=audio_file.name)
+        except Exception as e:
+            logger.warning(f"Failed to delete remote Gemini file: {str(e)}")
 
         return transcript, "gemini"
 
