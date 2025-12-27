@@ -5,7 +5,8 @@ app = create_app()
 
 if __name__ == '__main__':
     logger.info("Starting Flask server...")
-    logger.info("Frontend: http://localhost:5000/index.html")
+    logger.info("Backend: http://localhost:5000")
+    logger.info("Frontend: http://localhost:5173")
     logger.info("Endpoints:")
     logger.info("  - POST /api/transcript")
     logger.info("  - POST /api/summarize")
