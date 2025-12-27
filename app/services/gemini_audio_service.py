@@ -33,8 +33,8 @@ def transcribe_with_gemini(audio_path):
         logger.info("Audio ready. Generating transcript...")
 
         # 3. Generate Content
-        # Using gemini-1.5-flash as it is the current stable flash model
-        model_id = "gemini-1.5-flash"
+        # Using gemini-flash-latest (aliases to 1.5-flash) for higher quota limits
+        model_id = "gemini-flash-latest"
         
         prompt = """
         Transcribe this audio in Polish.

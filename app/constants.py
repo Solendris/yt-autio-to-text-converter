@@ -102,7 +102,7 @@ PERPLEXITY_SYSTEM_PROMPT = (
 )
 
 # Gemini Configuration
-GEMINI_MODEL = "gemini-2.0-flash-exp"
+GEMINI_MODEL = "gemini-flash-latest"
 GEMINI_TEMPERATURE = 0.7
 
 # Format Detection Patterns
