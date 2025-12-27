@@ -21,7 +21,7 @@ SUPPORTED_TRANSCRIPT_EXTENSIONS = ['.txt']
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
 
 # yt-dlp Configuration
-YT_DLP_FORMAT = 'bestaudio/best'
+YT_DLP_FORMAT = 'ba/best'
 YT_DLP_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 YT_DLP_FRAGMENT_RETRIES = 3
 YT_DLP_SOCKET_TIMEOUT = 60
