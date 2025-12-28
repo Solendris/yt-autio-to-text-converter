@@ -72,7 +72,7 @@ def get_ydl_options(
             # Impersonate mobile clients to bypass bot detection without requiring cookies
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'mweb', 'web']
+                    'player_client': ['web']
                 }
             }
         })
