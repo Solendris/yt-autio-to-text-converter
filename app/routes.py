@@ -37,8 +37,7 @@ from app.constants import (
     ERROR_TRANSCRIPT_FAILED,
     ERROR_SUMMARIZATION_FAILED,
     SUCCESS_TRANSCRIPT_READY,
-    DEBUG_ENDPOINT_TIMEOUT,
-    COOKIES_FILENAME
+    DEBUG_ENDPOINT_TIMEOUT
 )
 
 bp = Blueprint('api', __name__, url_prefix='/api')
@@ -68,42 +67,17 @@ def debug_info():
         import yt_dlp
         yt_dlp_version = yt_dlp.version.__version__
 
-        # Try to fetch formats for a sample video
-        video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        formats_info = "N/A"
-
-        try:
-            cmd = ["yt-dlp", "-F", video_url]
-
-            # Use cookies if available
-            cookies_path = os.path.join(os.getcwd(), COOKIES_FILENAME)
-            if os.path.exists(cookies_path):
-                cmd.extend(["--cookiefile", cookies_path])
-
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=DEBUG_ENDPOINT_TIMEOUT
-            )
-            formats_info = result.stdout[:1000]
-        except Exception as e:
-            formats_info = f"Error fetching formats: {str(e)}"
-
         return success_response({
             'yt_dlp_version': yt_dlp_version,
+            'yt_bypass_strategy': 'TV Client Impersonation',
             'ffmpeg_installed': subprocess.run(
                 ["ffmpeg", "-version"],
                 capture_output=True
             ).returncode == 0,
-            'cookies_detected': os.path.exists(
-                os.path.join(os.getcwd(), COOKIES_FILENAME)
-            ),
             'env': {
                 k: v for k, v in os.environ.items()
                 if "KEY" not in k.upper() and "SECRET" not in k.upper()
-            },
-            'sample_formats': formats_info
+            }
         })
     except Exception as e:
         return error_response(str(e), status_code=500)
