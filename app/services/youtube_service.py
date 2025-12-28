@@ -69,8 +69,11 @@ def get_ydl_options(
             'retries': MAX_DOWNLOAD_ATTEMPTS,
             'fragment_retries': YT_DLP_FRAGMENT_RETRIES,
             'skip_unavailable_fragments': True,
-            'http_headers': {
-                'User-Agent': YT_DLP_USER_AGENT
+            # Impersonate mobile clients to bypass bot detection without requiring cookies
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'mweb', 'web']
+                }
             }
         })
 
