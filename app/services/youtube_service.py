@@ -22,20 +22,8 @@ from app.constants import (
     PREFERRED_AUDIO_QUALITY,
     MAX_DOWNLOAD_ATTEMPTS,
     DOWNLOAD_RETRY_DELAY,
-    COOKIES_FILENAME,
     ERROR_INVALID_URL
 )
-
-
-def get_cookies_path() -> Optional[str]:
-    """
-    Get path to cookies.txt file if it exists.
-
-    Returns:
-        Path to cookies file or None if not found
-    """
-    cookies_path = os.path.join(os.getcwd(), COOKIES_FILENAME)
-    return cookies_path if os.path.exists(cookies_path) else None
 
 
 def get_ydl_options(
@@ -43,7 +31,7 @@ def get_ydl_options(
     output_path: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Get yt-dlp options with cookies support.
+    Get yt-dlp options with TV client impersonation for bot bypass.
 
     Args:
         download_audio: Whether to configure for audio download
@@ -55,6 +43,9 @@ def get_ydl_options(
     options = {
         'quiet': True,
         'no_warnings': True,
+        'nocheckcertificate': True,
+        'ignoreerrors': False,
+        'logtostderr': False,
     }
 
     if download_audio:
@@ -69,10 +60,12 @@ def get_ydl_options(
             'retries': MAX_DOWNLOAD_ATTEMPTS,
             'fragment_retries': YT_DLP_FRAGMENT_RETRIES,
             'skip_unavailable_fragments': True,
-            # Impersonate mobile clients to bypass bot detection without requiring cookies
+            # Impersonate TV clients to bypass bot detection
+            # TV clients often have fewer security checks (no JS challenges)
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['web']
+                    'player_client': ['tv', 'tv_embedded', 'android', 'web'],
+                    'player_skip': ['webpage', 'configs']
                 }
             }
         })
@@ -81,12 +74,6 @@ def get_ydl_options(
             options['outtmpl'] = output_path
     else:
         options['skip_download'] = True
-
-    # Add cookies if available
-    cookies_path = get_cookies_path()
-    if cookies_path:
-        logger.info(f"Using cookies from: {cookies_path}")
-        options['cookiefile'] = cookies_path
 
     return options
 

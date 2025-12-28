@@ -49,9 +49,6 @@ DEFAULT_OUTPUT_FORMAT = 'pdf'
 LOG_SEPARATOR = '=' * 80
 LOG_SECTION_SEPARATOR = '-' * 40
 
-# Cookie Configuration
-COOKIES_FILENAME = 'cookies.txt'
-
 # Error Messages
 ERROR_NO_URL = 'No URL provided'
 ERROR_NO_FILE = 'No file provided'
