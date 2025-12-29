@@ -106,13 +106,25 @@ def get_ydl_options(
             'retries': MAX_DOWNLOAD_ATTEMPTS,
             'fragment_retries': YT_DLP_FRAGMENT_RETRIES,
             'skip_unavailable_fragments': True,
-            # Use a mix of clients to get the broadest range of available formats.
-            'extractor_args': {
+        })
+
+        # Smart Client Selection
+        # If cookies are provided, Android/iOS clients are invalid (they don't support cookies).
+        # We must use 'web' (default) or 'tv'.
+        # If NO cookies, we use Android/iOS/TV to bypass bots.
+        if options.get('cookiefile'):
+             options['extractor_args'] = {
+                'youtube': {
+                    'player_client': ['web', 'tv'],
+                }
+            }
+        else:
+            # No cookies? Be aggressive with mobile clients
+            options['extractor_args'] = {
                 'youtube': {
                     'player_client': ['android', 'ios', 'tv', 'web'],
                 }
             }
-        })
 
         # Only add FFmpeg postprocessor if FFmpeg is actually present
         if ffmpeg_available:
@@ -245,6 +257,8 @@ def download_audio_from_youtube(video_url: str) -> Optional[str]:
         if ydl_opts.get('cookiefile'):
             exists = os.path.exists(ydl_opts['cookiefile'])
             logger.info(f"Cookies file exists at path: {exists}")
+        
+        logger.info(f"Node.js path: {shutil.which('node') or shutil.which('nodejs')}")
         logger.info(f"--------------------------")
 
         logger.info(f"Requested yt-dlp format: {YT_DLP_FORMAT}")

@@ -6,8 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV PORT 5000
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies with retries for robustness
+RUN apt-get update && \
+    apt-get install -y --fix-missing \
     ffmpeg \
     curl \
     nodejs \
