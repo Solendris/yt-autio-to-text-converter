@@ -30,6 +30,24 @@ from app.constants import (
 )
 
 
+class YdlLogger:
+    """Custom logger to capture yt-dlp internal messages."""
+    def debug(self, msg):
+        if msg.startswith('[debug] '):
+            logger.debug(msg)
+        else:
+            self.info(msg)
+
+    def info(self, msg):
+        logger.info(msg)
+
+    def warning(self, msg):
+        logger.warning(msg)
+
+    def error(self, msg):
+        logger.error(msg)
+
+
 def get_ydl_options(
     download_audio: bool = False,
     output_path: Optional[str] = None
@@ -46,12 +64,14 @@ def get_ydl_options(
         Dictionary of yt-dlp options
     """
     options = {
-        'quiet': True,
-        'no_warnings': True,
+        'logger': YdlLogger(),
+        'verbose': True,  # Added for maximum transparency in logs
+        'quiet': False,   # Set to False to see what's happening
+        'no_warnings': False,
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
-        'force_ipv4': True,  # Critical for Cloud/Render environments to avoid IPv6 blocks
+        'force_ipv4': True,
     }
 
     # 1. Priority: Physical cookies.txt (local or Render Secret File)
@@ -216,6 +236,16 @@ def download_audio_from_youtube(video_url: str) -> Optional[str]:
             download_audio=True,
             output_path=audio_path.replace('.m4a', '')
         )
+        
+        # Log environment state for debugging Render
+        logger.info(f"--- Environment Debug ---")
+        logger.info(f"Current Working Directory: {os.getcwd()}")
+        logger.info(f"FFmpeg path: {shutil.which('ffmpeg')}")
+        logger.info(f"YT-DLP Format: {ydl_opts.get('format')}")
+        if ydl_opts.get('cookiefile'):
+            exists = os.path.exists(ydl_opts['cookiefile'])
+            logger.info(f"Cookies file exists at path: {exists}")
+        logger.info(f"--------------------------")
 
         logger.info(f"Requested yt-dlp format: {YT_DLP_FORMAT}")
 
