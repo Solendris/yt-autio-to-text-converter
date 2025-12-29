@@ -6,6 +6,6 @@ faster-whisper>=1.1.1
 av>=14.0.0
 requests==2.32.3
 reportlab==4.0.9
-yt-dlp
+yt-dlp>=2025.1.0  # Force a very recent version
 google-genai
 gunicorn==21.2.0
