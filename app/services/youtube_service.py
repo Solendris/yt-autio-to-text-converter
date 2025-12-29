@@ -72,7 +72,12 @@ def get_ydl_options(
 
     if download_audio:
         options.update({
-            'format': YT_DLP_FORMAT,
+            # 'bestaudio/best' is broad: it takes the best audio-only stream, 
+            # or the best combined stream if audio-only isn't found.
+            'format': 'bestaudio/best',
+            # format_sort implements the "sorting" instead of "strictness" philosophy.
+            # We prefer aac/m4a for better compatibility with transcription services.
+            'format_sort': ['acodec:aac', 'ext:m4a', 'abr', 'quality'],
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': PREFERRED_AUDIO_CODEC,
@@ -82,11 +87,10 @@ def get_ydl_options(
             'retries': MAX_DOWNLOAD_ATTEMPTS,
             'fragment_retries': YT_DLP_FRAGMENT_RETRIES,
             'skip_unavailable_fragments': True,
-            # Impersonate TV clients to bypass bot detection
+            # Use a mix of clients to get the broadest range of available formats.
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['tv', 'tv_embedded', 'android', 'web'],
-                    'player_skip': ['webpage', 'configs']
+                    'player_client': ['android', 'ios', 'tv', 'web'],
                 }
             }
         })
