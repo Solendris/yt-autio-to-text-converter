@@ -6,6 +6,7 @@ import os
 import re
 import tempfile
 import yt_dlp
+import shutil
 from datetime import datetime
 from typing import Tuple, Optional, Dict, Any
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -50,6 +51,7 @@ def get_ydl_options(
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
+        'force_ipv4': True,  # Critical for Cloud/Render environments to avoid IPv6 blocks
     }
 
     # 1. Priority: Physical cookies.txt (local or Render Secret File)
@@ -71,18 +73,15 @@ def get_ydl_options(
             logger.error(f"Failed to decode YOUTUBE_COOKIES_B64: {str(e)}")
 
     if download_audio:
+        # Check if FFmpeg is available
+        ffmpeg_available = shutil.which('ffmpeg') is not None
+        if not ffmpeg_available:
+            logger.warning("FFmpeg NOT found! Disabling audio conversion post-processing. Downloading raw audio.")
+        
+        # 'bestaudio/best' is broad: it takes the best audio-only stream.
         options.update({
-            # 'bestaudio/best' is broad: it takes the best audio-only stream, 
-            # or the best combined stream if audio-only isn't found.
             'format': 'bestaudio/best',
-            # format_sort implements the "sorting" instead of "strictness" philosophy.
-            # We prefer aac/m4a for better compatibility with transcription services.
             'format_sort': ['acodec:aac', 'ext:m4a', 'abr', 'quality'],
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': PREFERRED_AUDIO_CODEC,
-                'preferredquality': PREFERRED_AUDIO_QUALITY,
-            }],
             'socket_timeout': YT_DLP_SOCKET_TIMEOUT,
             'retries': MAX_DOWNLOAD_ATTEMPTS,
             'fragment_retries': YT_DLP_FRAGMENT_RETRIES,
@@ -94,6 +93,14 @@ def get_ydl_options(
                 }
             }
         })
+
+        # Only add FFmpeg postprocessor if FFmpeg is actually present
+        if ffmpeg_available:
+            options['postprocessors'] = [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': PREFERRED_AUDIO_CODEC,
+                'preferredquality': PREFERRED_AUDIO_QUALITY,
+            }]
 
         if output_path:
             options['outtmpl'] = output_path
