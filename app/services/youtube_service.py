@@ -7,6 +7,7 @@ import re
 import tempfile
 import yt_dlp
 import shutil
+import subprocess
 from datetime import datetime
 from typing import Tuple, Optional, Dict, Any
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -110,16 +111,15 @@ def get_ydl_options(
 
         # Smart Client Selection
         # If cookies are provided, Android/iOS clients are invalid (they don't support cookies).
-        # We must use 'web' (default) or 'tv'.
-        # If NO cookies, we use Android/iOS/TV to bypass bots.
+        # We prioritize 'web' as it's the native environment for browser cookies.
         if options.get('cookiefile'):
              options['extractor_args'] = {
                 'youtube': {
-                    'player_client': ['web', 'tv'],
+                    'player_client': ['web'],
                 }
             }
         else:
-            # No cookies? Be aggressive with mobile clients
+            # No cookies? Use mobile + tv clients to bypass initial blocks
             options['extractor_args'] = {
                 'youtube': {
                     'player_client': ['android', 'ios', 'tv', 'web'],
@@ -258,7 +258,15 @@ def download_audio_from_youtube(video_url: str) -> Optional[str]:
             exists = os.path.exists(ydl_opts['cookiefile'])
             logger.info(f"Cookies file exists at path: {exists}")
         
-        logger.info(f"Node.js path: {shutil.which('node') or shutil.which('nodejs')}")
+        node_path = shutil.which('node') or shutil.which('nodejs')
+        logger.info(f"Node.js path: {node_path}")
+        if node_path:
+            try:
+                node_version = subprocess.check_output([node_path, '--version']).decode().strip()
+                logger.info(f"Node.js version: {node_version}")
+            except Exception as e:
+                logger.warning(f"Failed to get Node.js version: {e}")
+        
         logger.info(f"--------------------------")
 
         logger.info(f"Requested yt-dlp format: {YT_DLP_FORMAT}")

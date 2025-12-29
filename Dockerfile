@@ -6,13 +6,12 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV PORT 5000
 
-# Install system dependencies with retries for robustness
-RUN apt-get update && \
-    apt-get install -y --fix-missing \
-    ffmpeg \
-    curl \
-    nodejs \
-    && rm -rf /var/lib/apt/lists/*
+# Install system dependencies with NodeSource for a modern Node.js
+RUN apt-get update && apt-get install -y ffmpeg curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    ln -s /usr/bin/nodejs /usr/bin/node || true && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
 WORKDIR /app
