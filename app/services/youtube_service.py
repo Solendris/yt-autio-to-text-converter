@@ -10,6 +10,8 @@ from datetime import datetime
 from typing import Tuple, Optional, Dict, Any
 from youtube_transcript_api import YouTubeTranscriptApi
 
+import base64
+from app.config import Config
 from app.utils.logger import logger
 from app.services.transcription_service import transcribe_with_whisper
 from app.utils.formatting import format_seconds
@@ -31,7 +33,7 @@ def get_ydl_options(
     output_path: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Get yt-dlp options with TV client impersonation for bot bypass.
+    Get yt-dlp options with TV client impersonation and optional cookies support.
 
     Args:
         download_audio: Whether to configure for audio download
@@ -47,6 +49,25 @@ def get_ydl_options(
         'ignoreerrors': False,
         'logtostderr': False,
     }
+
+    # Handle Env Var Cookies (Render / Cloud Support)
+    if Config.YOUTUBE_COOKIES_B64:
+        try:
+            # Decode base64 cookies to a temporary file
+            decoded_cookies = base64.b64decode(Config.YOUTUBE_COOKIES_B64).decode('utf-8')
+            
+            # Create a named temp file that persists until closed? 
+            # Actually yt-dlp needs a path. We'll create one in tempdir.
+            cookie_file_path = os.path.join(tempfile.gettempdir(), f"yt_cookies_{os.getpid()}.txt")
+            
+            with open(cookie_file_path, 'w', encoding='utf-8') as f:
+                f.write(decoded_cookies)
+            
+            logger.info(f"Using ephemeral cookies from env var at: {cookie_file_path}")
+            options['cookiefile'] = cookie_file_path
+            
+        except Exception as e:
+            logger.error(f"Failed to decode YOUTUBE_COOKIES_B64: {str(e)}")
 
     if download_audio:
         options.update({

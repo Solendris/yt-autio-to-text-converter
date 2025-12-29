@@ -10,6 +10,7 @@ class Config:
     # API Keys
     PERPLEXITY_API_KEY = os.getenv('PERPLEXITY_API_KEY', '').strip()
     GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '').strip()
+    YOUTUBE_COOKIES_B64 = os.getenv('YOUTUBE_COOKIES_B64', '').strip()
 
     # Feature Flags
     USE_PERPLEXITY = PERPLEXITY_API_KEY != ''
