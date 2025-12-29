@@ -73,6 +73,7 @@ def get_ydl_options(
         'ignoreerrors': False,
         'logtostderr': False,
         'force_ipv4': True,
+        'no_cache_dir': True, # Important: force fresh JS solvers
     }
 
     # 1. Priority: Physical cookies.txt (local or Render Secret File)
@@ -111,11 +112,14 @@ def get_ydl_options(
 
         # Smart Client Selection
         # If cookies are provided, Android/iOS clients are invalid (they don't support cookies).
-        # We prioritize 'web' as it's the native environment for browser cookies.
+        # We prioritize 'web' as it's the native environment for browser cookies,
+        # but keep 'tv' as it often bypasses SABR forcing.
         if options.get('cookiefile'):
              options['extractor_args'] = {
                 'youtube': {
-                    'player_client': ['web'],
+                    'player_client': ['web', 'tv'],
+                    'include_dash_manifest': True,
+                    'include_hls_manifest': True,
                 }
             }
         else:
@@ -125,6 +129,14 @@ def get_ydl_options(
                     'player_client': ['android', 'ios', 'tv', 'web'],
                 }
             }
+        
+        # Check formats and handle SABR-related issues
+        options.update({
+            'check_formats': True,
+            'prefer_free_formats': False, # Sometimes True helps, but let's stick to False for quality
+            'youtube_include_dash_manifest': True,
+            'youtube_include_hls_manifest': True,
+        })
 
         # Only add FFmpeg postprocessor if FFmpeg is actually present
         if ffmpeg_available:
@@ -257,16 +269,30 @@ def download_audio_from_youtube(video_url: str) -> Optional[str]:
         if ydl_opts.get('cookiefile'):
             exists = os.path.exists(ydl_opts['cookiefile'])
             logger.info(f"Cookies file exists at path: {exists}")
+            if exists:
+                try:
+                    with open(ydl_opts['cookiefile'], 'r') as f:
+                        header = f.readline()
+                        logger.info(f"Cookie file header: {header.strip()[:50]}")
+                except Exception as e:
+                    logger.error(f"Failed to read cookie file: {e}")
         
         node_path = shutil.which('node') or shutil.which('nodejs')
         logger.info(f"Node.js path: {node_path}")
         if node_path:
             try:
+                # Test if we can actually run it
+                node_test = subprocess.run([node_path, '-e', 'console.log("JS OK")'], capture_output=True, text=True, timeout=5)
+                logger.info(f"Node.js test execution: {node_test.stdout.strip()} (Return code: {node_test.returncode})")
                 node_version = subprocess.check_output([node_path, '--version']).decode().strip()
                 logger.info(f"Node.js version: {node_version}")
             except Exception as e:
-                logger.warning(f"Failed to get Node.js version: {e}")
+                logger.error(f"Node.js found but FAILING TO RUN: {e}")
+        else:
+            logger.error("CRITICAL: Node.js NOT FOUND in path! Check Docker build logs.")
         
+        # Log system PATH to see where things are
+        logger.info(f"System PATH: {os.environ.get('PATH')}")
         logger.info(f"--------------------------")
 
         logger.info(f"Requested yt-dlp format: {YT_DLP_FORMAT}")
