@@ -24,7 +24,8 @@ from app.constants import (
     PREFERRED_AUDIO_QUALITY,
     MAX_DOWNLOAD_ATTEMPTS,
     DOWNLOAD_RETRY_DELAY,
-    ERROR_INVALID_URL
+    ERROR_INVALID_URL,
+    COOKIES_FILENAME
 )
 
 
@@ -33,7 +34,8 @@ def get_ydl_options(
     output_path: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Get yt-dlp options with TV client impersonation and optional cookies support.
+    Get yt-dlp options with TV client impersonation and robust cookies support.
+    Prioritizes physical cookies.txt (Render Secret File) over YOUTUBE_COOKIES_B64.
 
     Args:
         download_audio: Whether to configure for audio download
@@ -50,22 +52,21 @@ def get_ydl_options(
         'logtostderr': False,
     }
 
-    # Handle Env Var Cookies (Render / Cloud Support)
-    if Config.YOUTUBE_COOKIES_B64:
+    # 1. Priority: Physical cookies.txt (local or Render Secret File)
+    cookies_path = os.path.join(os.getcwd(), COOKIES_FILENAME)
+    if os.path.exists(cookies_path):
+        logger.info(f"Using physical cookies file at: {cookies_path}")
+        options['cookiefile'] = cookies_path
+    
+    # 2. Fallback: Base64 Env Var (if no physical file and var exists)
+    elif Config.YOUTUBE_COOKIES_B64:
         try:
-            # Decode base64 cookies to a temporary file
             decoded_cookies = base64.b64decode(Config.YOUTUBE_COOKIES_B64).decode('utf-8')
-            
-            # Create a named temp file that persists until closed? 
-            # Actually yt-dlp needs a path. We'll create one in tempdir.
             cookie_file_path = os.path.join(tempfile.gettempdir(), f"yt_cookies_{os.getpid()}.txt")
-            
             with open(cookie_file_path, 'w', encoding='utf-8') as f:
                 f.write(decoded_cookies)
-            
-            logger.info(f"Using ephemeral cookies from env var at: {cookie_file_path}")
+            logger.info(f"Using ephemeral cookies from B64 env var at: {cookie_file_path}")
             options['cookiefile'] = cookie_file_path
-            
         except Exception as e:
             logger.error(f"Failed to decode YOUTUBE_COOKIES_B64: {str(e)}")
 
@@ -82,7 +83,6 @@ def get_ydl_options(
             'fragment_retries': YT_DLP_FRAGMENT_RETRIES,
             'skip_unavailable_fragments': True,
             # Impersonate TV clients to bypass bot detection
-            # TV clients often have fewer security checks (no JS challenges)
             'extractor_args': {
                 'youtube': {
                     'player_client': ['tv', 'tv_embedded', 'android', 'web'],
