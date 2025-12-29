@@ -49,6 +49,9 @@ class YdlLogger:
         logger.error(msg)
 
 
+# Explicitly tell yt-dlp to use node for JS solving
+os.environ['YDL_JS_INTERPRETER'] = 'node'
+
 def get_ydl_options(
     download_audio: bool = False,
     output_path: Optional[str] = None
@@ -74,6 +77,8 @@ def get_ydl_options(
         'logtostderr': False,
         'force_ipv4': True,
         'no_cache_dir': True, # Important: force fresh JS solvers
+        'impersonate': 'chrome', # Modern browser impersonation
+        'allow_unplayable_formats': True, # Try to see everything
     }
 
     # 1. Priority: Physical cookies.txt (local or Render Secret File)
@@ -308,6 +313,20 @@ def download_audio_from_youtube(video_url: str) -> Optional[str]:
                 if attempt == MAX_DOWNLOAD_ATTEMPTS:
                     raise
                 logger.warning(f"Attempt {attempt} failed ({str(e)}), retrying...")
+                
+                # If it's a format error, let's try to list what IS available
+                if "Requested format is not available" in str(e):
+                    try:
+                        logger.info("Listing all available formats for debugging:")
+                        info_opts = get_ydl_options(download_audio=False)
+                        with yt_dlp.YoutubeDL(info_opts) as ydl:
+                            info = ydl.extract_info(video_url, download=False)
+                            formats = info.get('formats', [])
+                            for f in formats:
+                                logger.info(f"Format: {f.get('format_id')} | Ext: {f.get('ext')} | Resolution: {f.get('resolution')} | Note: {f.get('format_note')}")
+                    except Exception as list_e:
+                        logger.warning(f"Failed to list formats: {list_e}")
+
                 import time
                 time.sleep(DOWNLOAD_RETRY_DELAY)
 
