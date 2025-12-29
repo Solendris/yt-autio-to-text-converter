@@ -60,3 +60,5 @@ Thumbs.db
 
 fix_pep8.py
 frontend/node_modules/.vite/deps/_metadata.json
+cookies.txt
+cookies_raw.txt
