@@ -4,9 +4,9 @@ Centralizes all magic numbers, strings, and configuration values.
 """
 
 # API Timeouts
-YOUTUBE_API_TIMEOUT = 60
-SUMMARIZATION_API_TIMEOUT = 120
-DEBUG_ENDPOINT_TIMEOUT = 30
+YOUTUBE_API_TIMEOUT = 600
+SUMMARIZATION_API_TIMEOUT = 600
+DEBUG_ENDPOINT_TIMEOUT = 60
 
 # Text Processing Limits
 MAX_TEXT_LENGTH = 20000
@@ -21,7 +21,7 @@ SUPPORTED_TRANSCRIPT_EXTENSIONS = ['.txt']
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
 
 # yt-dlp Configuration
-YT_DLP_FORMAT = 'ba/best'
+YT_DLP_FORMAT = 'bestaudio/best'
 YT_DLP_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 YT_DLP_FRAGMENT_RETRIES = 3
 YT_DLP_SOCKET_TIMEOUT = 60
