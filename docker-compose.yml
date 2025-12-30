@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  yt-summarizer:
+    build: .
+    container_name: yt-audio-to-text
+    restart: always
+    ports:
+      - "5001:5000"
+    environment:
+      - GOOGLE_API_KEY=your_google_api_key_here
+      - PERPLEXITY_API_KEY=your_perplexity_api_key_here
+      - PORT=5000
+      - DEBUG=False
+    volumes:
+      - ./logs:/app/logs
+      - ./cookies.txt:/app/cookies.txt
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/api/health" ]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 40s
