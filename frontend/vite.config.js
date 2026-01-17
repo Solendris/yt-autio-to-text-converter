@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/yt-autio-to-text-converter/',
   plugins: [react()],
   server: {
     proxy: {
