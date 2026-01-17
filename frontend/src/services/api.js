@@ -3,15 +3,28 @@
  * Handles all communication with the Flask backend.
  */
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
+console.log(`[API] Initialized with base URL: ${API_BASE}`);
 
 export const api = {
     /**
      * Check backend health
      */
     async checkHealth() {
-        const response = await fetch(`${API_BASE}/health`);
-        return response.json();
+        try {
+            console.log(`[API] Checking health at ${API_BASE}/health...`);
+            const response = await fetch(`${API_BASE}/health`);
+            if (!response.ok) {
+                throw new Error(`Health check failed: ${response.status} ${response.statusText}`);
+            }
+            const data = await response.json();
+            console.log('[API] Health check passed:', data);
+            return data;
+        } catch (error) {
+            console.error(`[API] CRITICAL: Connection to backend failed at ${API_BASE}/health`, error);
+            throw error;
+        }
     },
 
     /**
@@ -28,7 +41,9 @@ export const api = {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Failed to generate transcript');
+            const errorMessage = errorData.error || 'Failed to generate transcript';
+            console.error(`[API] Transcript generation failed: ${errorMessage}`, errorData);
+            throw new Error(errorMessage);
         }
 
         return response.json();
@@ -64,7 +79,9 @@ export const api = {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Failed to generate summary');
+            const errorMessage = errorData.error || 'Failed to generate summary';
+            console.error(`[API] Summary generation failed: ${errorMessage}`, errorData);
+            throw new Error(errorMessage);
         }
 
         // Summary returns a BLOB (PDF/TXT)
@@ -85,7 +102,9 @@ export const api = {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Failed to generate hybrid PDF');
+            const errorMessage = errorData.error || 'Failed to generate hybrid PDF';
+            console.error(`[API] Hybrid generation failed: ${errorMessage}`, errorData);
+            throw new Error(errorMessage);
         }
 
         return response.blob();
@@ -106,7 +125,9 @@ export const api = {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Failed to validate file');
+            const errorMessage = errorData.error || 'Failed to validate file';
+            console.error(`[API] File validation failed: ${errorMessage}`, errorData);
+            throw new Error(errorMessage);
         }
 
         return response.json();
