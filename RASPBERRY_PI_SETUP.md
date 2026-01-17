@@ -40,12 +40,42 @@ This guide explains how to deploy the YouTube Summarizer backend to a Raspberry 
 To allow the frontend (GitHub Pages) to access your Raspberry Pi, you need a public URL.
 
 ### Option A: Cloudflare Tunnel (Secure, Recommended)
-1.  Install `cloudflared` on Pi.
-2.  Run a tunnel pointing to localhost:5000.
+
+1.  **Install `cloudflared` on Pi**:
+    *Method 1: Package Manager (Recommended)*
+    ```bash
+    # Add Cloudflare's GPG key
+    sudo mkdir -p --mode=0755 /usr/share/keyrings
+    curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
+
+    # Add the repo
+    echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared jammy main' | sudo tee /etc/apt/sources.list.d/cloudflared.list
+
+    # Update and install
+    sudo apt-get update && sudo apt-get install cloudflared
+    ```
+
+    *Method 2: Direct Download (If apt fails)*
+    ```bash
+    # 64-bit Pi (Pi 3B+, 4, 5 with 64-bit OS)
+    wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb
+    sudo dpkg -i cloudflared-linux-arm64.deb
+
+    # 32-bit Pi
+    wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-armhf.deb
+    sudo dpkg -i cloudflared-linux-armhf.deb
+    ```
+
+2.  **Run the Tunnel**:
+    Start a temporary tunnel to expose port 5000:
     ```bash
     cloudflared tunnel --url http://localhost:5000
     ```
-3.  Copy the generated URL (e.g., `https://shiny-example-123.trycloudflare.com`).
+
+3.  **Get the URL**:
+    Look for a line like:
+    `+  https://random-name-here.trycloudflare.com`
+    Copy this URL.
 
 ### Option B: Local Network (Home Use Only)
 - Find your Pi's IP: `hostname -I`

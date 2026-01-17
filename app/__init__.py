@@ -12,4 +12,8 @@ def create_app(config_class=Config):
     from app.routes import bp as api_bp
     app.register_blueprint(api_bp)
 
+    @app.route('/')
+    def index():
+        return {"status": "ok", "message": "YouTube Summarizer Backend is running on Raspberry Pi"}
+
     return app

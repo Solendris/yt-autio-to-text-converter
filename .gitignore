@@ -60,3 +60,4 @@ Thumbs.db
 
 fix_pep8.py
 frontend/node_modules/.vite/deps/_metadata.json
+RASPBERRY_PI_SETUP.md
