@@ -35,52 +35,24 @@ This guide explains how to deploy the YouTube Summarizer backend to a Raspberry 
     - Run: `curl http://localhost:5000/api/health`
     - You should see a JSON response.
 
-## 2. Expose Backend (Optional but Recommended)
+## 2. Expose Backend (Persistent Access)
 
-To allow the frontend (GitHub Pages) to access your Raspberry Pi, you need a public URL.
+To allow the frontend (GitHub Pages) to access your Raspberry Pi reliability, we will use **Ngrok** with your free static domain.
 
-### Option A: Cloudflare Tunnel (Secure, Recommended)
-
-1.  **Install `cloudflared` on Pi**:
-    *Method 1: Package Manager (Recommended)*
+1.  **Transfer Setup Script**: Use the provided `setup_ngrok.sh` script.
     ```bash
-    # Add Cloudflare's GPG key
-    sudo mkdir -p --mode=0755 /usr/share/keyrings
-    curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
-
-    # Add the repo
-    echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared jammy main' | sudo tee /etc/apt/sources.list.d/cloudflared.list
-
-    # Update and install
-    sudo apt-get update && sudo apt-get install cloudflared
+    # Run this on your Raspberry Pi inside the project directory
+    chmod +x setup_ngrok.sh
+    ./setup_ngrok.sh
     ```
 
-    *Method 2: Direct Download (If apt fails)*
-    ```bash
-    # 64-bit Pi (Pi 3B+, 4, 5 with 64-bit OS)
-    wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb
-    sudo dpkg -i cloudflared-linux-arm64.deb
+2.  **Follow Instructions**:
+    - The script will ask for your **Ngrok Authtoken**. You can find it here: [https://dashboard.ngrok.com/get-started/your-authtoken](https://dashboard.ngrok.com/get-started/your-authtoken).
+    - It will automatically configure the tunnel for `ridgy-collin-gardenless.ngrok-free.dev`.
 
-    # 32-bit Pi
-    wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-armhf.deb
-    sudo dpkg -i cloudflared-linux-armhf.deb
-    ```
-
-2.  **Run the Tunnel**:
-    Start a temporary tunnel to expose port 5000:
-    ```bash
-    cloudflared tunnel --url http://localhost:5000
-    ```
-
-3.  **Get the URL**:
-    Look for a line like:
-    `+  https://random-name-here.trycloudflare.com`
-    Copy this URL.
-
-### Option B: Local Network (Home Use Only)
-- Find your Pi's IP: `hostname -I`
-- Use `http://<YOUR_PI_IP>:5000`.
-- **Note**: This might cause "Mixed Content" errors if your frontend is on HTTPS (GitHub Pages).
+3.  **Verify**:
+    - Open `https://ridgy-collin-gardenless.ngrok-free.dev/api/health` in your browser.
+    - You should see the health check response.
 
 ## 3. Configure Frontend
 
