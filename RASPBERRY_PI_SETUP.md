@@ -34,8 +34,44 @@ This guide explains how to deploy the YouTube Summarizer backend to a Raspberry 
 5.  **Verify Local Connection**:
     - Run: `curl http://localhost:5000/api/health`
     - You should see a JSON response.
+    - You should see a JSON response.
 
-## 2. Expose Backend (Persistent Access)
+## 2. Managing Code with Git (Updating & Switching Branches)
+
+Instead of copying files manually via `scp`, you can use Git directly on the Pi.
+
+1.  **First Time Setup (Clone)**:
+    If you haven't cloned the repo on the Pi yet:
+    ```bash
+    cd /home/pi/
+    # If the folder exists from scp, rename it to backup just in case
+    mv yt-autio-to-text-converter yt-autio-to-text-converter.bak
+    
+    # Clone your repo (replace URL with your actual repo URL)
+    git clone https://github.com/YOUR_USERNAME/yt-autio-to-text-converter.git
+    cd yt-autio-to-text-converter/local
+    ```
+
+2.  **Updating to a Specific Branch**:
+    ```bash
+    # 1. Fetch latest changes from all branches
+    git fetch --all
+
+    # 2. Switch to the branch you want (e.g., 'main' or 'feature-branch')
+    git checkout <branch_name>
+
+    # 3. Pull the latest code
+    git pull origin <branch_name>
+    ```
+
+3.  **Apply Changes (Rebuild Docker)**:
+    After any code change, you must restart the containers:
+    ```bash
+    docker-compose down
+    docker-compose up -d --build
+    ```
+
+## 3. Expose Backend (Persistent Access)
 
 To allow the frontend (GitHub Pages) to access your Raspberry Pi reliability, we will use **Ngrok** with your free static domain.
 
