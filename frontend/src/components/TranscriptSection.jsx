@@ -130,7 +130,7 @@ const TranscriptSection = ({ videoUrl, videoDuration }) => {
 
     return (
         <div className="section transcript">
-            <h2>Section 1: Transcript</h2>
+            <h2>Transcript</h2>
 
             <div className="option-group" style={{ marginTop: '15px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
