@@ -3,7 +3,7 @@ import StatusMessage from './StatusMessage';
 import { api } from '../services/api';
 
 const TranscriptSection = ({ videoUrl, videoDuration }) => {
-    // const [useDiarization, setUseDiarization] = useState(false); // Removed
+    const [useDiarization, setUseDiarization] = useState(false);
     const [status, setStatus] = useState({ message: '', type: '' });
     const [transcriptData, setTranscriptData] = useState(null);
 
@@ -28,7 +28,7 @@ const TranscriptSection = ({ videoUrl, videoDuration }) => {
         setStatus({ message: `${loadingMsg} Please wait.`, type: 'loading' });
 
         try {
-            const data = await api.generateTranscript(videoUrl, false); // useDiarization permanently false
+            const data = await api.generateTranscript(videoUrl, useDiarization);
             setTranscriptData(data);
             setStatus({ message: `[OK] Ready! Source: ${data.source}`, type: 'success' });
         } catch (e) {
@@ -130,10 +130,19 @@ const TranscriptSection = ({ videoUrl, videoDuration }) => {
 
     return (
         <div className="section transcript">
-            <h2>📝 Section 1: Transcript</h2>
+            <h2>Section 1: Transcript</h2>
 
-            {/* Features list removed */}
-            {/* Checkbox removed */}
+            <div className="option-group" style={{ marginTop: '15px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                    <input
+                        type="checkbox"
+                        checked={useDiarization}
+                        onChange={(e) => setUseDiarization(e.target.checked)}
+                        style={{ width: 'auto', marginRight: '8px' }}
+                    />
+                    Identify Speakers (Gemini AI) ⭐
+                </label>
+            </div>
 
             <div className="action-buttons">
                 <button className="btn-action" onClick={generateTranscript}>Generate Transcript</button>
@@ -144,7 +153,7 @@ const TranscriptSection = ({ videoUrl, videoDuration }) => {
             {/* Always show transcript box */}
             <>
                 <div className="timestamp-hint">
-                    💡 Tip: Click timestamps <b>[MM:SS]</b> to jump to that moment in the video.
+                    Tip: Click timestamps <b>[MM:SS]</b> to jump to that moment in the video.
                 </div>
                 <div className="transcript-box">
                     {renderTranscriptContent()}
