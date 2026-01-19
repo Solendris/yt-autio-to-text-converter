@@ -62,3 +62,4 @@ fix_pep8.py
 frontend/node_modules/.vite/deps/_metadata.json
 RASPBERRY_PI_SETUP.md
 frontend/.env.production
+frontend/DEPLOY_GUIDE.md
