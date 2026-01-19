@@ -140,7 +140,7 @@ const TranscriptSection = ({ videoUrl, videoDuration }) => {
                         onChange={(e) => setUseDiarization(e.target.checked)}
                         style={{ width: 'auto', marginRight: '8px' }}
                     />
-                    Identify Speakers (Gemini AI) ⭐
+                    Identify Speakers (Gemini AI)
                 </label>
             </div>
 
