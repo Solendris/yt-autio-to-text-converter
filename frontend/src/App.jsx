@@ -2,14 +2,13 @@ import React, { useState, useCallback } from 'react';
 import Header from './components/Header';
 import VideoInput from './components/VideoInput';
 import TranscriptSection from './components/TranscriptSection';
-import SummarizeSection from './components/SummarizeSection';
-import HybridSection from './components/HybridSection';
 
 import { api } from './services/api';
 
 function App() {
   const [videoUrl, setVideoUrl] = useState('');
   const [videoId, setVideoId] = useState(null);
+  const [videoDuration, setVideoDuration] = useState(null);
 
   React.useEffect(() => {
     // Check backend health on load to verify connection
@@ -23,18 +22,17 @@ function App() {
     setVideoId(id);
   }, []);
 
+  const handleDurationChange = useCallback((duration) => {
+    setVideoDuration(duration);
+  }, []);
+
   return (
     <div className="container">
       <Header />
 
-      <VideoInput onUrlChange={handleUrlChange} />
+      <VideoInput onUrlChange={handleUrlChange} onDurationChange={handleDurationChange} />
 
-      <div className="sections">
-        <TranscriptSection videoUrl={videoUrl} />
-        <SummarizeSection videoUrl={videoUrl} />
-      </div>
-
-      <HybridSection videoUrl={videoUrl} />
+      <TranscriptSection videoUrl={videoUrl} videoDuration={videoDuration} />
     </div>
   );
 }

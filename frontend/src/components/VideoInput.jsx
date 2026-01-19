@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const VideoInput = ({ onUrlChange }) => {
+const VideoInput = ({ onUrlChange, onDurationChange }) => {
     const [url, setUrl] = useState('');
     const [videoId, setVideoId] = useState(null);
     const playerRef = useRef(null);
@@ -16,7 +16,8 @@ const VideoInput = ({ onUrlChange }) => {
         const id = extractVideoId(url);
         setVideoId(id);
         onUrlChange(url, id);
-    }, [url, onUrlChange]);
+        if (onDurationChange) onDurationChange(null); // Reset duration on new URL
+    }, [url, onUrlChange, onDurationChange]);
 
     // Load YouTube IFrame API if not already loaded
     useEffect(() => {
@@ -46,9 +47,29 @@ const VideoInput = ({ onUrlChange }) => {
                 videoId: id || '',
                 events: {
                     'onReady': (event) => {
-                        if (id) event.target.loadVideoById(id);
+                        if (id) {
+                            event.target.loadVideoById(id);
+                            // Brief delay to ensure metadata is loaded or use onStateChange if reliable
+                            // Usually onReady is enough, but getDuration might be 0 initially
+                            if (onDurationChange) {
+                                // Try immediately, but also could set up an interval or wait for '5' (cued)
+                                // For simplicity, we'll try checking duration after a short moment
+                                setTimeout(() => {
+                                    const dur = event.target.getDuration();
+                                    console.log("Video Duration:", dur);
+                                    if (dur) onDurationChange(dur);
+                                }, 1000);
+                            }
+                        }
                         window.ytPlayer = event.target; // Make it globally accessible for seekTo
                     },
+                    'onStateChange': (event) => {
+                        // YT.PlayerState.CUED = 5, PLAYING = 1
+                        if (event.data === 1 || event.data === 5) {
+                            const dur = event.target.getDuration();
+                            if (dur && onDurationChange) onDurationChange(dur);
+                        }
+                    }
                 }
             });
         }

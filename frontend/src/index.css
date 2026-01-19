@@ -407,11 +407,19 @@ input[type="text"].url-input {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.5;
-  max-height: 400px;
+  height: 400px;
+  /* Fixed height */
   overflow-y: auto;
   white-space: pre-line;
   border: 1px solid #333;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.placeholder-text {
+  color: #6b7280;
+  text-align: center;
+  padding-top: 150px;
+  font-style: italic;
 }
 
 /* Scrollbar styling for transcript box */
