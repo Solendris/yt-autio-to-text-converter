@@ -1,6 +1,11 @@
 """
 API routes for the YouTube Summarizer application.
 Handles transcript generation, summarization, and hybrid outputs.
+
+Refactored to use:
+- Custom exception hierarchy (Fail Fast, EAFP)
+- Data models for validation (DRY, SRP)
+- Middleware for error handling (SoC)
 """
 import time
 import os
@@ -9,9 +14,10 @@ from io import BytesIO
 from datetime import datetime
 from flask import Blueprint, request, send_file
 
-from app.config import Config
+from app.config import config
 from app.utils.logger import logger
 from app.utils.responses import success_response, error_response, validation_error_response
+from app.exceptions import ValidationError, TranscriptError, SummarizationError
 from app.validators import (
     validate_youtube_url,
     validate_transcript_file,
@@ -50,15 +56,27 @@ bp = Blueprint('api', __name__, url_prefix='/api')
 
 @bp.route('/health', methods=['GET'])
 def health():
-    """Health check endpoint."""
+    """
+    Health check endpoint.
+    
+    Returns application status and configuration info.
+    Uses HealthResponse model for consistent response format.
+    """
+    from app.models import HealthResponse
+    from app.config import config
+    from app.utils.responses import success_response
+    
     logger.debug("Health check")
-    return success_response({
-        'version': '1.0.0',
-        'sections': ['transcript', 'summarize'],
-        'perplexity_configured': Config.USE_PERPLEXITY,
-        'gemini_configured': bool(Config.GOOGLE_API_KEY),
-        'ai_provider': 'perplexity' if Config.USE_PERPLEXITY else 'gemini'
-    })
+    
+    response = HealthResponse(
+        version='2.0.0',
+        sections=['transcript', 'summarize'],
+        perplexity_configured=config.use_perplexity,
+        gemini_configured=bool(config.google_api_key),
+        ai_provider=config.ai_provider
+    )
+    
+    return success_response(response.to_dict())
 
 
 @bp.route('/debug', methods=['GET'])
@@ -115,49 +133,57 @@ def debug_info():
 
 @bp.route('/transcript', methods=['POST'])
 def get_transcript_only():
-    """Generate transcript only (without summarization)."""
+    """
+    Generate transcript only (without summarization).
+    
+    Refactored to use:
+    - TranscriptRequest model for validation
+    - Custom exceptions (Fail Fast, EAFP)
+    - Error middleware handles all exceptions
+    """
+    from app.models import TranscriptRequest, TranscriptResponse
+    
+    # EAFP: Try to process, handle errors if they occur
     try:
         data = request.get_json()
         if not data:
-            return validation_error_response('body', 'Invalid JSON')
-
-        video_url = data.get('url', '').strip()
-        use_diarization = data.get('diarization', False)
-
-        # Validate URL
-        if not video_url:
-            return error_response(ERROR_NO_URL)
-
-        is_valid, error_msg = validate_youtube_url(video_url)
-        if not is_valid:
-            return validation_error_response('url', error_msg)
-
+            raise ValidationError('body', 'Invalid JSON')
+        
+        # Create and validate request model (Fail Fast validation in __post_init__)
+        request_data = TranscriptRequest(**data)
+        
         logger.info(
-            "Processing transcript request: {} "
-            "(Diarization: {})".format(video_url, use_diarization)
+            f"Processing transcript request: {request_data.url} "
+            f"(Diarization: {request_data.diarization})"
         )
-
+        
         # Generate transcript
-        if use_diarization:
-            transcript, source = get_diarized_transcript(video_url)
+        if request_data.diarization:
+            transcript, source = get_diarized_transcript(request_data.url)
         else:
-            transcript, source = get_transcript(video_url)
-
+            transcript, source = get_transcript(request_data.url)
+        
         if not transcript:
-            logger.error(f"Transcript failed: {source}")
-            return error_response(source or ERROR_TRANSCRIPT_FAILED)
-
+            raise TranscriptError(source or "Transcript generation failed", source)
+        
         logger.info(f"[OK] {SUCCESS_TRANSCRIPT_READY} - source: {source}")
-
-        return success_response({
-            'transcript': transcript,
-            'source': source,
-            'filename': f'transcript_{extract_video_id(video_url)}_{source}.txt'
-        }, message=SUCCESS_TRANSCRIPT_READY)
-
+        
+        # Use response model
+        response = TranscriptResponse(
+            transcript=transcript,
+            source=source,
+            filename=f'transcript_{request_data.video_id}_{source}.txt',
+            video_id=request_data.video_id
+        )
+        
+        return success_response(response.to_dict(), message=SUCCESS_TRANSCRIPT_READY)
+    
+    except (ValidationError, TranscriptError):
+        # Re-raise for error middleware to handle
+        raise
     except Exception as e:
         logger.error(f"Transcript endpoint error: {str(e)}")
-        return error_response(str(e), status_code=500)
+        raise TranscriptError(str(e))
 
 
 @bp.route('/upload-transcript', methods=['POST'])
