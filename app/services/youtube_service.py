@@ -176,52 +176,53 @@ def get_youtube_transcript(video_id: str) -> Tuple[Optional[str], Optional[str]]
 def download_audio_from_youtube(video_url: str) -> Optional[str]:
     """
     Download audio from YouTube video.
-
+    
+    Refactored to use @retry decorator for DRY compliance.
+    
     Args:
         video_url: YouTube URL
-
+        
     Returns:
         Path to downloaded audio file or None if failed
     """
-    try:
+    from app.utils.decorators import retry
+    from app.exceptions import AudioDownloadError
+    
+    @retry(max_attempts=MAX_DOWNLOAD_ATTEMPTS, delay=DOWNLOAD_RETRY_DELAY, backoff=1.0)
+    def _download() -> str:
+        """Inner function with retry logic."""
         logger.info(f"Downloading audio: {video_url}")
-
+        
         temp_dir = tempfile.gettempdir()
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         audio_path = os.path.join(temp_dir, f"yt_audio_{timestamp}.m4a")
-
+        
         ydl_opts = get_ydl_options(
             download_audio=True,
             output_path=audio_path.replace('.m4a', '')
         )
-
+        
         logger.info(f"Requested yt-dlp format: {YT_DLP_FORMAT}")
-
-        # Retry logic
-        for attempt in range(1, MAX_DOWNLOAD_ATTEMPTS + 1):
-            try:
-                logger.info(f"Audio download attempt {attempt}/{MAX_DOWNLOAD_ATTEMPTS}...")
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([video_url])
-                break
-            except Exception as e:
-                if attempt == MAX_DOWNLOAD_ATTEMPTS:
-                    raise
-                logger.warning(f"Attempt {attempt} failed ({str(e)}), retrying...")
-                import time
-                time.sleep(DOWNLOAD_RETRY_DELAY)
-
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
+        
+        # Check for mp3 file (after conversion)
         mp3_path = audio_path.replace('.m4a', '.mp3')
         if os.path.exists(mp3_path):
             logger.info(f"[OK] Audio downloaded: {mp3_path}")
             return mp3_path
-
-        logger.error("Downloaded audio file not found")
-        return None
-
+        
+        raise AudioDownloadError(video_url, "Downloaded audio file not found")
+    
+    # EAFP: Try to download, handle errors
+    try:
+        return _download()
+    except AudioDownloadError:
+        raise
     except Exception as e:
         logger.error(f"Audio download error: {str(e)}")
-        return None
+        raise AudioDownloadError(video_url, str(e))
 
 
 def get_diarized_transcript(video_url: str) -> Tuple[Optional[str], str]:

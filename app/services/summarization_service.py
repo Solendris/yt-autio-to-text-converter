@@ -5,7 +5,7 @@ Handles text summarization using Perplexity and Gemini APIs.
 import requests
 from typing import Optional
 
-from app.config import Config
+from app.config import config
 from app.utils.logger import logger
 from app.constants import (
     MAX_TEXT_LENGTH,
@@ -80,7 +80,7 @@ def summarize_with_perplexity(text: str, summary_type: str = DEFAULT_SUMMARY_TYP
 
         url = "https://api.perplexity.ai/chat/completions"
         headers = {
-            "Authorization": f"Bearer {Config.PERPLEXITY_API_KEY}",
+            "Authorization": f"Bearer {config.perplexity_api_key}",
             "Content-Type": "application/json"
         }
 
@@ -147,7 +147,7 @@ def summarize_with_gemini(text: str, summary_type: str = DEFAULT_SUMMARY_TYPE) -
 
         url = (
             f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{GEMINI_MODEL}:generateContent?key={Config.GOOGLE_API_KEY}"
+            f"{GEMINI_MODEL}:generateContent?key={config.google_api_key}"
         )
         headers = {"Content-Type": "application/json"}
 
