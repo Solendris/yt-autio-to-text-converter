@@ -1,3 +1,8 @@
+/**
+ * StatusMessage Component
+ * Displays status messages with different types (success, error, loading)
+ */
+
 import React from 'react';
 
 const StatusMessage = ({ status }) => {
@@ -10,4 +15,5 @@ const StatusMessage = ({ status }) => {
     );
 };
 
-export default StatusMessage;
+// Memoize to prevent unnecessary re-renders
+export default React.memo(StatusMessage);
