@@ -59,24 +59,18 @@ def health():
     """
     Health check endpoint.
     
-    Returns application status and configuration info.
-    Uses HealthResponse model for consistent response format.
+    Refactored to use controller pattern:
+    - Route handles HTTP concerns only
+    - Controller handles business logic
+    - Clean separation (SoC)
     """
-    from app.models import HealthResponse
-    from app.config import config
+    from app.controllers import HealthController
     from app.utils.responses import success_response
     
-    logger.debug("Health check")
+    controller = HealthController()
+    health_data = controller.get_health_status()
     
-    response = HealthResponse(
-        version='2.0.0',
-        sections=['transcript', 'summarize'],
-        perplexity_configured=config.use_perplexity,
-        gemini_configured=bool(config.google_api_key),
-        ai_provider=config.ai_provider
-    )
-    
-    return success_response(response.to_dict())
+    return success_response(health_data)
 
 
 @bp.route('/debug', methods=['GET'])
@@ -136,46 +130,36 @@ def get_transcript_only():
     """
     Generate transcript only (without summarization).
     
-    Refactored to use:
-    - TranscriptRequest model for validation
-    - Custom exceptions (Fail Fast, EAFP)
-    - Error middleware handles all exceptions
+    Refactored with controller pattern:
+    - Route: HTTP handling (request parsing, response formatting)
+    - Controller: Business logic (orchestration)
+    - Services: Domain logic (YouTube API, Whisper)
+    
+    This demonstrates:
+    - SRP: Each layer has one responsibility
+    - TDA: Route tells controller what to do
+    - SoC: Clear separation of concerns
     """
-    from app.models import TranscriptRequest, TranscriptResponse
+    from app.controllers import TranscriptController
+    from app.models import TranscriptRequest
+    from app.utils.responses import success_response
+    from app.constants import SUCCESS_TRANSCRIPT_READY
     
     # EAFP: Try to process, handle errors if they occur
     try:
+        # Parse request
         data = request.get_json()
         if not data:
             raise ValidationError('body', 'Invalid JSON')
         
-        # Create and validate request model (Fail Fast validation in __post_init__)
+        # Validate (Fail Fast in __post_init__)
         request_data = TranscriptRequest(**data)
         
-        logger.info(
-            f"Processing transcript request: {request_data.url} "
-            f"(Diarization: {request_data.diarization})"
-        )
+        # Tell controller to generate transcript (TDA)
+        controller = TranscriptController()
+        response = controller.generate_transcript(request_data)
         
-        # Generate transcript
-        if request_data.diarization:
-            transcript, source = get_diarized_transcript(request_data.url)
-        else:
-            transcript, source = get_transcript(request_data.url)
-        
-        if not transcript:
-            raise TranscriptError(source or "Transcript generation failed", source)
-        
-        logger.info(f"[OK] {SUCCESS_TRANSCRIPT_READY} - source: {source}")
-        
-        # Use response model
-        response = TranscriptResponse(
-            transcript=transcript,
-            source=source,
-            filename=f'transcript_{request_data.video_id}_{source}.txt',
-            video_id=request_data.video_id
-        )
-        
+        # Return response
         return success_response(response.to_dict(), message=SUCCESS_TRANSCRIPT_READY)
     
     except (ValidationError, TranscriptError):
