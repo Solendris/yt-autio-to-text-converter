@@ -1,7 +1,7 @@
 import time
 from typing import Tuple, Optional
 from google import genai
-from app.config import Config
+from app.config import config
 from app.utils.logger import logger
 from app.constants import GEMINI_MODEL
 
@@ -17,11 +17,11 @@ def transcribe_with_gemini(audio_path: str) -> Tuple[Optional[str], str]:
         Tuple of (transcript_text, "gemini") or (None, error_message).
     """
     try:
-        if not Config.GOOGLE_API_KEY:
+        if not config.google_api_key:
             logger.error("GOOGLE_API_KEY not found")
             return None, "Missing API Key"
 
-        client = genai.Client(api_key=Config.GOOGLE_API_KEY)
+        client = genai.Client(api_key=config.google_api_key)
 
         logger.info(f"Uploading audio to Gemini: {audio_path}")
 

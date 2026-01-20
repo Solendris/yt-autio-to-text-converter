@@ -288,11 +288,11 @@ def _generate_summary(transcript: str, summary_type: str) -> tuple[str, str]:
 
     summary = None
 
-    if Config.USE_PERPLEXITY:
+    if config.use_perplexity:
         logger.info("Using Perplexity API...")
         summary = summarize_with_perplexity(transcript, summary_type)
 
-        if not summary and Config.GOOGLE_API_KEY:
+        if not summary and config.google_api_key:
             logger.warning("Perplexity failed, trying Gemini...")
             summary = summarize_with_gemini(transcript, summary_type)
     else:
