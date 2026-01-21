@@ -6,12 +6,18 @@ from app.utils.logger import logger
 from app.constants import GEMINI_MODEL
 
 
-def transcribe_with_gemini(audio_path: str) -> Tuple[Optional[str], str]:
+def transcribe_with_gemini(
+    audio_path: str, 
+    title: Optional[str] = None, 
+    duration: Optional[str] = None
+) -> Tuple[Optional[str], str]:
     """
     Uploads audio to Gemini and requests transcription with speaker identification.
 
     Args:
         audio_path: Path to the local audio file.
+        title: Optional video title for context.
+        duration: Optional video duration for context.
 
     Returns:
         Tuple of (transcript_text, "gemini") or (None, error_message).
@@ -41,14 +47,24 @@ def transcribe_with_gemini(audio_path: str) -> Tuple[Optional[str], str]:
         logger.info("Audio ready. Generating transcript...")
 
         # 3. Generate Content
-        prompt = """
-        Transcribe this audio in Polish.
-        Identify different speakers (e.g., Speaker 1, Speaker 2).
-        Format exactly like this:
-        [MM:SS] Speaker 1: Text...
-        [MM:SS] Speaker 2: Text...
+        # Provide metadata for "grounding" to prevent timestamp hallucinations
+        context_str = ""
+        if title or duration:
+            context_str = "\nKontekst nagrania:\n"
+            if title: context_str += f"- Tytuł: {title}\n"
+            if duration: context_str += f"- Czas trwania: {duration}\n"
 
-        Ensure timestamps correspond to the start of the sentence.
+        prompt = f"""
+        Transkrybuj to nagranie audio w języku polskim.{context_str}
+        
+        WAŻNE INSTRUKCJE:
+        1. Rozpoznaj różnych mówców (np. Speaker 1, Speaker 2).
+        2. Formatuj KAŻDĄ linię dokładnie tak:
+           [HH:MM:SS] Speaker X: Treść...
+        3. Używaj PEŁNEGO formatu czasu [godziny:minuty:sekundy], nawet jeśli film jest krótki.
+        4. Znaczniki czasu MUSZĄ odpowiadać rzeczywistemu momentowi w nagraniu.
+        5. Nie wymyślaj czasu wykraczającego poza czas trwania nagrania. Jeśli nagranie ma {duration or 'określony czas'}, ostatni znacznik musi być przed tą wartością.
+        6. Pisz poprawną polszczyzną, zachowując naturalny sposób mówienia.
         """
 
         response = client.models.generate_content(

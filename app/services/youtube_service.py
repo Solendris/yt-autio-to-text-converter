@@ -239,12 +239,31 @@ def get_diarized_transcript(video_url: str) -> Tuple[Optional[str], str]:
 
     logger.info(">>> SECTION 1: Getting diarized transcript (Gemini) <<<")
 
+    # Fetch metadata first for better Gemini grounding
+    title = get_video_title(video_url)
+    
+    # Get duration for grounding (using yt-dlp to get detailed info)
+    duration_str = "Unknown"
+    try:
+        ydl_opts = get_ydl_options(download_audio=False)
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=False)
+            duration = info.get('duration')
+            if duration:
+                duration_str = format_seconds(duration)
+    except Exception as e:
+        logger.warning(f"Could not fetch video duration: {e}")
+
     audio_path = download_audio_from_youtube(video_url)
     if not audio_path:
         return None, "Audio download failed"
 
     try:
-        transcript, source = transcribe_with_gemini(audio_path)
+        transcript, source = transcribe_with_gemini(
+            audio_path, 
+            title=title, 
+            duration=duration_str
+        )
 
         # Cleanup audio file
         if os.path.exists(audio_path):
@@ -257,6 +276,8 @@ def get_diarized_transcript(video_url: str) -> Tuple[Optional[str], str]:
 
     except Exception as e:
         logger.error(f"Diarized transcription failed: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         return None, str(e)
 
 
