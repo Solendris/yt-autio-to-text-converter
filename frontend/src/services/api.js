@@ -5,6 +5,11 @@
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
+// Common headers to bypass ngrok warning page
+const COMMON_HEADERS = {
+    'ngrok-skip-browser-warning': 'true'
+};
+
 console.log(`[API] Initialized with base URL: ${API_BASE}`);
 
 export const api = {
@@ -14,7 +19,9 @@ export const api = {
     async checkHealth() {
         try {
             console.log(`[API] Checking health at ${API_BASE}/health...`);
-            const response = await fetch(`${API_BASE}/health`);
+            const response = await fetch(`${API_BASE}/health`, {
+                headers: COMMON_HEADERS
+            });
             if (!response.ok) {
                 throw new Error(`Health check failed: ${response.status} ${response.statusText}`);
             }
@@ -35,7 +42,10 @@ export const api = {
     async generateTranscript(url, diarization = false) {
         const response = await fetch(`${API_BASE}/transcript`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...COMMON_HEADERS
+            },
             body: JSON.stringify({ url, diarization })
         });
 
@@ -66,13 +76,17 @@ export const api = {
 
             response = await fetch(`${API_BASE}/summarize`, {
                 method: 'POST',
+                headers: COMMON_HEADERS,
                 body: formData
             });
         } else {
             // JSON request
             response = await fetch(`${API_BASE}/summarize`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...COMMON_HEADERS
+                },
                 body: JSON.stringify({ url, type, format })
             });
         }
@@ -96,7 +110,10 @@ export const api = {
     async generateHybrid(url, type = 'normal') {
         const response = await fetch(`${API_BASE}/hybrid`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...COMMON_HEADERS
+            },
             body: JSON.stringify({ url, type })
         });
 
@@ -120,6 +137,7 @@ export const api = {
 
         const response = await fetch(`${API_BASE}/upload-transcript`, {
             method: 'POST',
+            headers: COMMON_HEADERS,
             body: formData
         });
 
