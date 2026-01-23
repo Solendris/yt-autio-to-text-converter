@@ -16,8 +16,15 @@ def require_api_key(f):
     """
     Decorator to require valid API key for endpoint access.
     
-    Checks for X-API-Key header and validates against configured API_KEY.
-    Returns 401 Unauthorized if key is missing or invalid.
+    For public portfolio apps, this allows two authentication methods:
+    1. API Key (X-API-Key header) - for direct API access
+    2. Whitelisted Origin - for public frontend (relies on CORS + rate limiting)
+    
+    Whitelisted origins can access without API key, protected by:
+    - CORS (only specific domains can make browser requests)
+    - Rate limiting (prevents abuse)
+    
+    This balances security with usability for public portfolio applications.
     
     Usage:
         @bp.route('/transcript', methods=['POST'])
@@ -33,10 +40,22 @@ def require_api_key(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Get API key from header
-        api_key = request.headers.get('X-API-Key')
+        # Whitelisted origins (public frontend)
+        # These can access without API key, protected by CORS + rate limiting
+        WHITELISTED_ORIGINS = [
+            'https://solendris.github.io',
+            'http://localhost:5173',
+            'http://127.0.0.1:5173'
+        ]
         
-        # Get expected API key from environment
+        # Check if request is from whitelisted origin
+        origin = request.headers.get('Origin', '')
+        if origin in WHITELISTED_ORIGINS:
+            logger.info(f"Request from whitelisted origin: {origin}")
+            return f(*args, **kwargs)
+        
+        # For non-whitelisted origins, require API key
+        api_key = request.headers.get('X-API-Key')
         expected_key = os.getenv('API_KEY', '').strip()
         
         # Check if API key is configured
@@ -49,7 +68,7 @@ def require_api_key(f):
         
         # Validate API key
         if not api_key:
-            logger.warning(f"Missing API key from {request.remote_addr}")
+            logger.warning(f"Missing API key from {request.remote_addr} (origin: {origin})")
             return error_response(
                 'Missing API key. Please provide X-API-Key header.',
                 status_code=401
