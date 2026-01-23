@@ -9,10 +9,10 @@ import { useYouTubePlayer } from '../../hooks/useYouTubePlayer';
 import { YOUTUBE_PLAYER } from '../../utils/constants';
 
 const VideoPreview = () => {
-    const { videoId, updateVideoDuration } = useAppContext();
+    const { videoId, updateVideoDuration, playerRef } = useAppContext();
 
     // Initialize YouTube player with custom hook
-    useYouTubePlayer(videoId, updateVideoDuration);
+    useYouTubePlayer(videoId, updateVideoDuration, playerRef);
 
     if (!videoId) return null;
 

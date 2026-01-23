@@ -6,13 +6,11 @@
 import React, { useCallback } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { useTranscriptFormatting } from '../../hooks/useTranscriptFormatting';
-import { useYouTubePlayer } from '../../hooks/useYouTubePlayer';
 import TranscriptLine from './TranscriptLine';
 import { MESSAGES } from '../../utils/constants';
 
 const TranscriptDisplay = () => {
-    const { transcriptData, videoId } = useAppContext();
-    const { seekTo } = useYouTubePlayer(videoId);
+    const { transcriptData, seekTo } = useAppContext();
     const { formattedLines } = useTranscriptFormatting(
         transcriptData?.transcript || null
     );

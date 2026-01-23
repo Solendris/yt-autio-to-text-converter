@@ -3,7 +3,7 @@
  * Provides centralized state management for the entire app
  */
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 const AppContext = createContext(null);
 
@@ -20,6 +20,7 @@ export const AppProvider = ({ children }) => {
     const [videoUrl, setVideoUrl] = useState('');
     const [videoId, setVideoId] = useState(null);
     const [videoDuration, setVideoDuration] = useState(null);
+    const playerRef = useRef(null);
 
     // Transcript State
     const [transcriptData, setTranscriptData] = useState(null);
@@ -75,11 +76,20 @@ export const AppProvider = ({ children }) => {
         setUseDiarization(value);
     }, []);
 
+    // Player Actions
+    const seekTo = useCallback((seconds) => {
+        if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+            playerRef.current.seekTo(seconds, true);
+            playerRef.current.playVideo();
+        }
+    }, []);
+
     const value = {
         // Video State
         videoUrl,
         videoId,
         videoDuration,
+        playerRef,
 
         // Transcript State
         transcriptData,
@@ -104,6 +114,9 @@ export const AppProvider = ({ children }) => {
         // Settings Actions
         toggleDiarization,
         updateDiarization,
+
+        // Player Actions
+        seekTo,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

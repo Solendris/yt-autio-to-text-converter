@@ -6,8 +6,9 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { YOUTUBE_API, YOUTUBE_PLAYER } from '../utils/constants';
 
-export const useYouTubePlayer = (videoId, onDurationChange) => {
-    const playerRef = useRef(null);
+export const useYouTubePlayer = (videoId, onDurationChange, externalPlayerRef = null) => {
+    const internalPlayerRef = useRef(null);
+    const playerRef = externalPlayerRef || internalPlayerRef;
     const isAPILoadedRef = useRef(false);
 
     // Load YouTube IFrame API script
@@ -100,16 +101,7 @@ export const useYouTubePlayer = (videoId, onDurationChange) => {
         };
     }, [videoId, onDurationChange]);
 
-    // Seek to specific timestamp
-    const seekTo = useCallback((seconds) => {
-        if (window.ytPlayer && typeof window.ytPlayer.seekTo === 'function') {
-            window.ytPlayer.seekTo(seconds, true);
-            window.ytPlayer.playVideo();
-        }
-    }, []);
-
     return {
         player: playerRef.current,
-        seekTo,
     };
 };
