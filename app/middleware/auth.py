@@ -49,10 +49,21 @@ def require_api_key(f):
         ]
         
         # Check if request is from whitelisted origin
+        # Note: Browsers send 'Origin' for POST/PUT/DELETE and CORS preflight,
+        # but may only send 'Referer' for simple GET requests
         origin = request.headers.get('Origin', '')
+        referer = request.headers.get('Referer', '')
+        
+        # Check Origin first
         if origin in WHITELISTED_ORIGINS:
-            logger.info(f"Request from whitelisted origin: {origin}")
+            logger.info(f"Request from whitelisted origin (Origin header): {origin}")
             return f(*args, **kwargs)
+        
+        # Fallback: check if Referer starts with whitelisted origin
+        for whitelisted in WHITELISTED_ORIGINS:
+            if referer.startswith(whitelisted):
+                logger.info(f"Request from whitelisted origin (Referer header): {referer}")
+                return f(*args, **kwargs)
         
         # For non-whitelisted origins, require API key
         api_key = request.headers.get('X-API-Key')
