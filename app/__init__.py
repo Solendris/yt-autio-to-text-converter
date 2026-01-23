@@ -53,7 +53,9 @@ def create_app(config_class=None):
         r"/api/*": {
             "origins": allowed_origins,
             "methods": ["GET", "POST", "OPTIONS"],
-            "allow_headers": ["Content-Type", "X-API-Key"],
+            "allow_headers": ["Content-Type", "X-API-Key", "ngrok-skip-browser-warning"],
+            "expose_headers": ["Content-Type"],
+            "supports_credentials": False,
             "max_age": 3600
         }
     })
