@@ -118,21 +118,34 @@ def validate_output_format(output_format: Optional[str]) -> str:
 def sanitize_filename(filename: str) -> str:
     """
     Sanitize filename to prevent path traversal and invalid characters.
-
+    
+    Uses regex-based whitelist approach for maximum security.
+    Addresses: High Vulnerability #10 - Path Traversal
+    
     Args:
         filename: The filename to sanitize
-
+        
     Returns:
         Sanitized filename
     """
-    # Remove path separators and potentially dangerous characters
-    dangerous_chars = ['/', '\\', '..', '\x00']
-    sanitized = filename
-
-    for char in dangerous_chars:
-        sanitized = sanitized.replace(char, '_')
-
-    # Remove leading/trailing whitespace and dots
-    sanitized = sanitized.strip('. ')
-
-    return sanitized if sanitized else 'unnamed'
+    import re
+    
+    # Remove all characters except safe ones (alphanumeric, underscore, dash, dot)
+    safe = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', filename)
+    
+    # Remove multiple consecutive special characters
+    safe = re.sub(r'_{2,}', '_', safe)
+    safe = re.sub(r'\.{2,}', '.', safe)
+    safe = re.sub(r'-{2,}', '-', safe)
+    
+    # Remove leading/trailing special characters
+    safe = safe.strip('._- ')
+    
+    # Limit length to prevent filesystem issues
+    if len(safe) > 255:
+        import os
+        name, ext = os.path.splitext(safe)
+        safe = name[:255-len(ext)] + ext
+    
+    # Return safe filename or default
+    return safe if safe else 'unnamed'

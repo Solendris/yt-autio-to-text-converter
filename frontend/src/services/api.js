@@ -4,10 +4,12 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_KEY = import.meta.env.VITE_API_KEY || '';
 
-// Common headers to bypass ngrok warning page
+// Common headers for all requests
 const COMMON_HEADERS = {
-    'ngrok-skip-browser-warning': 'true'
+    'ngrok-skip-browser-warning': 'true',
+    'X-API-Key': API_KEY  // Required for backend authentication
 };
 
 console.log(`[API] Initialized with base URL: ${API_BASE}`);

@@ -22,6 +22,10 @@ def create_app(config_class=None):
     """
     app = Flask(__name__)
     
+    # Set global upload size limit
+    # Addresses: High Vulnerability #7 - Lack of Upload Size Validation
+    app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB
+    
     # Fail Fast: Validate configuration on startup
     try:
         from app.config import config
@@ -35,9 +39,23 @@ def create_app(config_class=None):
         logger.error(f"Configuration validation failed: {e.message}")
         raise
     
-    # Enable CORS
-    CORS(app)
-    logger.info("CORS enabled for all routes")
+    # Configure CORS with whitelist
+    # Addresses: Critical Vulnerability #2 - Unrestricted CORS
+    allowed_origins = [
+        "https://solendris.github.io",  # Production frontend
+        "http://localhost:5173",         # Local development
+        "http://127.0.0.1:5173"          # Alternative localhost
+    ]
+    
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": allowed_origins,
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Content-Type", "X-API-Key"],
+            "max_age": 3600
+        }
+    })
+    logger.info(f"CORS enabled for origins: {', '.join(allowed_origins)}")
     
     # Register error handlers
     from app.middleware.error_handler import init_middleware
@@ -56,6 +74,16 @@ def create_app(config_class=None):
             "message": "YouTube Summarizer Backend is running",
             "version": "2.0.0"
         }
+    
+    # Add security headers to all responses
+    @app.after_request
+    def add_security_headers(response):
+        """Add security headers to prevent common vulnerabilities."""
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        return response
     
     logger.info("Flask application created successfully")
     return app

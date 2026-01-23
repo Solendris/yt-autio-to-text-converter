@@ -57,13 +57,16 @@ class Config:
     # API Keys
     perplexity_api_key: str = field(default_factory=lambda: os.getenv('PERPLEXITY_API_KEY', '').strip())
     google_api_key: str = field(default_factory=lambda: os.getenv('GOOGLE_API_KEY', '').strip())
+    api_key: str = field(default_factory=lambda: os.getenv('API_KEY', '').strip())
     
     # Timeouts (seconds)
     api_timeout: int = field(default_factory=lambda: _get_env_int('API_TIMEOUT', 120))
     youtube_timeout: int = field(default_factory=lambda: _get_env_int('YOUTUBE_TIMEOUT', 60))
+    operation_timeout: int = field(default_factory=lambda: _get_env_int('OPERATION_TIMEOUT', 300))
     
     # Processing Limits
     max_text_length: int = field(default_factory=lambda: _get_env_int('MAX_TEXT_LENGTH', 20000))
+    max_video_duration: int = field(default_factory=lambda: _get_env_int('MAX_VIDEO_DURATION', 5400))
     
     # Feature Flags
     debug: bool = field(default_factory=lambda: _get_env_bool('DEBUG', False))
@@ -84,15 +87,21 @@ class Config:
     
     def _validate_api_keys(self):
         """
-        Ensure at least one AI provider is configured.
+        Ensure at least one AI provider is configured and API key for authentication.
         
         Raises:
             ConfigurationError: If no API keys are configured
         """
         if not self.perplexity_api_key and not self.google_api_key:
             raise ConfigurationError(
-                "At least one API key must be configured: "
+                "At least one AI provider API key must be configured: "
                 "GOOGLE_API_KEY or PERPLEXITY_API_KEY"
+            )
+        
+        if not self.api_key:
+            raise ConfigurationError(
+                "API_KEY must be configured for authentication. "
+                "Generate a secure random string and set it in environment variables."
             )
     
     def _validate_timeouts(self):

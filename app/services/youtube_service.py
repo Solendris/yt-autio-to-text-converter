@@ -177,6 +177,9 @@ def download_audio_from_youtube(video_url: str) -> Optional[str]:
     """
     Download audio from YouTube video.
     
+    Validates video duration before download to prevent processing
+    excessively long videos (High Vulnerability #5).
+    
     Refactored to use @retry decorator for DRY compliance.
     
     Args:
@@ -184,18 +187,59 @@ def download_audio_from_youtube(video_url: str) -> Optional[str]:
         
     Returns:
         Path to downloaded audio file or None if failed
+        
+    Raises:
+        ValidationError: If video is too long
+        AudioDownloadError: If download fails
     """
     from app.utils.decorators import retry
     from app.exceptions import AudioDownloadError
+    from app.config import config
+    
+    # First, validate video duration (before downloading)
+    logger.info(f"Validating video duration for: {video_url}")
+    try:
+        ydl_opts = get_ydl_options(download_audio=False)
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=False)
+            duration = info.get('duration', 0)
+            
+            if duration > config.max_video_duration:
+                from app.exceptions import ValidationError
+                duration_minutes = duration / 60
+                max_minutes = config.max_video_duration / 60
+                raise ValidationError(
+                    'url',
+                    f'Video too long ({duration_minutes:.1f} minutes). '
+                    f'Maximum allowed: {max_minutes:.1f} minutes (1.5 hours)'
+                )
+            
+            logger.info(f"Video duration: {duration}s (within limit of {config.max_video_duration}s)")
+    except ValidationError:
+        raise
+    except Exception as e:
+        logger.warning(f"Could not validate video duration: {e}")
+        # Continue anyway - don't fail on metadata retrieval
     
     @retry(max_attempts=MAX_DOWNLOAD_ATTEMPTS, delay=DOWNLOAD_RETRY_DELAY, backoff=1.0)
     def _download() -> str:
         """Inner function with retry logic."""
         logger.info(f"Downloading audio: {video_url}")
         
-        temp_dir = tempfile.gettempdir()
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        audio_path = os.path.join(temp_dir, f"yt_audio_{timestamp}.m4a")
+        # Use secure temporary file creation
+        # Addresses: High Vulnerability #8 - Insecure Temporary Files
+        fd, audio_path = tempfile.mkstemp(
+            suffix='.m4a',
+            prefix='yt_audio_',
+            dir=None  # Use secure system temp directory
+        )
+        os.close(fd)  # Close file descriptor, keep file
+        
+        # Set secure permissions (owner read/write only)
+        try:
+            os.chmod(audio_path, 0o600)
+        except Exception as e:
+            logger.warning(f"Could not set file permissions: {e}")
         
         ydl_opts = get_ydl_options(
             download_audio=True,

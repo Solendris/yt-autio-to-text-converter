@@ -20,6 +20,12 @@ DOWNLOAD_RETRY_DELAY = 5  # seconds
 SUPPORTED_TRANSCRIPT_EXTENSIONS = ['.txt']
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
 
+# Security Configuration
+MAX_VIDEO_DURATION = 5400  # 1.5 hours in seconds
+OPERATION_TIMEOUT = 300  # 5 minutes for long-running operations
+RATE_LIMIT_REQUESTS = 50  # Maximum requests per hour
+RATE_LIMIT_WINDOW = 3600  # 1 hour in seconds
+
 # yt-dlp Configuration
 YT_DLP_FORMAT = 'ba/best'
 YT_DLP_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
