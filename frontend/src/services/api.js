@@ -8,9 +8,13 @@ const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 // Common headers for all requests
 const COMMON_HEADERS = {
-    'ngrok-skip-browser-warning': 'true',
-    'X-API-Key': API_KEY  // Required for backend authentication
+    'ngrok-skip-browser-warning': 'true'
 };
+
+// Only add API key header if configured (for non-whitelisted origins)
+if (API_KEY) {
+    COMMON_HEADERS['X-API-Key'] = API_KEY;
+}
 
 console.log(`[API] Initialized with base URL: ${API_BASE}`);
 
