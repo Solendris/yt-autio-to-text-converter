@@ -41,9 +41,11 @@ def require_api_key(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Whitelisted origins (public frontend)
-        # These can access without API key, protected by CORS + rate limiting
+        # These can access without API key, protected by CORSrate limiting
+        # Note: Include both with and without trailing slash - browsers vary
         WHITELISTED_ORIGINS = [
             'https://solendris.github.io',
+            'https://solendris.github.io/',
             'http://localhost:5173',
             'http://127.0.0.1:5173'
         ]

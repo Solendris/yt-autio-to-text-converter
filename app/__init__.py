@@ -41,8 +41,10 @@ def create_app(config_class=None):
     
     # Configure CORS with whitelist
     # Addresses: Critical Vulnerability #2 - Unrestricted CORS
+    # Note: Include both with and without trailing slash - browsers vary
     allowed_origins = [
-        "https://solendris.github.io",  # Production frontend
+        "https://solendris.github.io",   # Production frontend
+        "https://solendris.github.io/",  # Production frontend (with trailing slash)
         "http://localhost:5173",         # Local development
         "http://127.0.0.1:5173"          # Alternative localhost
     ]
