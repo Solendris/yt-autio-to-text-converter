@@ -65,3 +65,4 @@ RASPBERRY_PI_SETUP.md
 frontend/.env.production
 frontend/DEPLOY_GUIDE.md
 frontend/REFACTORING_WALKTHROUGH.md
+frontend/.env.production
