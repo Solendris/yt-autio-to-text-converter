@@ -72,7 +72,19 @@ def transcribe_with_gemini(
             contents=[prompt, audio_file]
         )
 
-        transcript = response.text
+        # 4. Handle response safely
+        # Check if response has text (it might be blocked by safety filters or empty)
+        transcript = getattr(response, 'text', None)
+        
+        if not transcript:
+            finish_reason = "UNKNOWN"
+            if hasattr(response, 'candidates') and response.candidates:
+                finish_reason = response.candidates[0].finish_reason.name
+            
+            error_msg = f"Gemini returned no text (Reason: {finish_reason})"
+            logger.error(error_msg)
+            return None, error_msg
+
         logger.info(f"[OK] Gemini transcription complete ({len(transcript)} chars)")
 
         # Cleanup (optional, but good practice)

@@ -108,7 +108,7 @@ PERPLEXITY_SYSTEM_PROMPT = (
 )
 
 # Gemini Configuration
-GEMINI_MODEL = "gemini-3-flash-preview"
+GEMINI_MODEL = "gemini-1.5-flash"
 GEMINI_TEMPERATURE = 0.7
 
 # Format Detection Patterns
