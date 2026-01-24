@@ -4,6 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { YOUTUBE_PLAYER } from '../utils/constants';
 
 const AppContext = createContext(null);
 
@@ -76,9 +77,17 @@ export const AppProvider = ({ children }) => {
         setUseDiarization(value);
     }, []);
 
+
+
     // Player Actions
     const seekTo = useCallback((seconds) => {
-        const player = playerRef.current || window.ytPlayer;
+        let player = playerRef.current || window.ytPlayer;
+
+        // Final fallback: Try getting player from YT API registry
+        if (!player && window.YT && window.YT.get) {
+            player = window.YT.get(YOUTUBE_PLAYER.PLAYER_ID);
+            if (player) console.log('[AppContext] Recovered player via YT.get()');
+        }
 
         console.log(`[AppContext] seekTo called: ${seconds}s`);
 

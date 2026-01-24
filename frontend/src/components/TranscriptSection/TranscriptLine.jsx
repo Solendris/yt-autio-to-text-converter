@@ -17,7 +17,11 @@ const TranscriptLine = ({ line, onTimestampClick }) => {
             <div className={`transcript-line ${cssClass}`}>
                 <span
                     className="timestamp-link"
-                    onClick={() => onTimestampClick(timeInSeconds)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // console.log(`[TranscriptLine] Clicked timestamp: ${line.timestamp}`);
+                        onTimestampClick(timeInSeconds);
+                    }}
                 >
                     {line.timestamp}
                 </span>
@@ -49,7 +53,11 @@ const TranscriptLine = ({ line, onTimestampClick }) => {
                 <span
                     key={`timestamp-${index}`}
                     className="timestamp-link"
-                    onClick={() => onTimestampClick(timeInSeconds)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // console.log(`[TranscriptLine] Clicked inline timestamp: ${timestamp}`);
+                        onTimestampClick(timeInSeconds);
+                    }}
                 >
                     {timestamp}
                 </span>

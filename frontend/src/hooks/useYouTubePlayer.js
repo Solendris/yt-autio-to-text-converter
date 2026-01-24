@@ -66,13 +66,19 @@ export const useYouTubePlayer = (videoId, onDurationChange, externalPlayerRef = 
 
         const handlePlayerReady = (event) => {
             if (videoId) {
-                event.target.loadVideoById(videoId);
+                // Ensure target has the method before calling it
+                if (event.target && typeof event.target.loadVideoById === 'function') {
+                    event.target.loadVideoById(videoId);
+                }
 
                 // Get duration after brief delay to ensure metadata is loaded
                 setTimeout(() => {
-                    const duration = event.target.getDuration();
-                    if (duration && onDurationChange) {
-                        onDurationChange(duration);
+                    // Safety check: ensure target still exists and has getDuration
+                    if (event.target && typeof event.target.getDuration === 'function') {
+                        const duration = event.target.getDuration();
+                        if (duration && onDurationChange) {
+                            onDurationChange(duration);
+                        }
                     }
                 }, YOUTUBE_PLAYER.DURATION_CHECK_DELAY);
             }
@@ -82,9 +88,12 @@ export const useYouTubePlayer = (videoId, onDurationChange, externalPlayerRef = 
             // Update duration when video is playing or cued
             const { PLAYING, CUED } = YOUTUBE_API.PLAYER_STATES;
             if (event.data === PLAYING || event.data === CUED) {
-                const duration = event.target.getDuration();
-                if (duration && onDurationChange) {
-                    onDurationChange(duration);
+                // Safety check
+                if (event.target && typeof event.target.getDuration === 'function') {
+                    const duration = event.target.getDuration();
+                    if (duration && onDurationChange) {
+                        onDurationChange(duration);
+                    }
                 }
             }
         };
