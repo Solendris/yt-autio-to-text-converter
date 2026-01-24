@@ -28,13 +28,12 @@ const TranscriptActions = () => {
 
     return (
         <>
-            <div className="option-group" style={{ marginTop: '15px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <div className="option-group">
+                <label className="checkbox-label">
                     <input
                         type="checkbox"
                         checked={useDiarization}
                         onChange={(e) => updateDiarization(e.target.checked)}
-                        style={{ width: 'auto', marginRight: '8px' }}
                     />
                     Identify Speakers (Gemini AI)
                 </label>

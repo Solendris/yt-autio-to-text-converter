@@ -498,3 +498,19 @@ input[type="text"].url-input {
   font-size: 12px;
   margin-top: 10px;
 }
+
+/* Refactored Styles */
+.option-group {
+  margin-top: 15px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  width: auto;
+  margin-right: 8px;
+}

@@ -350,7 +350,6 @@ def get_transcript(video_url: str) -> Tuple[Optional[str], str]:
         return transcript, source
 
     # Fallback to Whisper
-    # Fallback to Whisper
     logger.info("Falling back to Whisper...")
     audio_path = download_audio_from_youtube(video_url)
     if not audio_path:

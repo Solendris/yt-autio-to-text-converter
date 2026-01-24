@@ -12,13 +12,15 @@ const UrlInput = () => {
     const [localUrl, setLocalUrl] = useState('');
 
     useEffect(() => {
-        const videoId = extractVideoId(localUrl);
-        updateVideoData(localUrl, videoId);
+        const timer = setTimeout(() => {
+            if (localUrl) {
+                const videoId = extractVideoId(localUrl);
+                updateVideoData(localUrl, videoId);
+                clearTranscript();
+            }
+        }, 500); // 500ms debounce
 
-        // Clear previous transcript when URL changes
-        if (localUrl !== '') {
-            clearTranscript();
-        }
+        return () => clearTimeout(timer);
     }, [localUrl, updateVideoData, clearTranscript]);
 
     return (

@@ -3,7 +3,7 @@
  * Handles all communication with the Flask backend.
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '/api';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 // Common headers for all requests
