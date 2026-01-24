@@ -78,9 +78,27 @@ export const AppProvider = ({ children }) => {
 
     // Player Actions
     const seekTo = useCallback((seconds) => {
-        if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
-            playerRef.current.seekTo(seconds, true);
-            playerRef.current.playVideo();
+        const player = playerRef.current || window.ytPlayer;
+
+        console.log(`[AppContext] seekTo called: ${seconds}s`);
+
+        if (player && typeof player.seekTo === 'function') {
+            try {
+                // Check player state
+                if (typeof player.getPlayerState === 'function') {
+                    console.log(`[AppContext] Player state: ${player.getPlayerState()}`);
+                }
+
+                player.seekTo(seconds, true);
+                player.playVideo();
+                console.log('[AppContext] Seek command sent');
+            } catch (error) {
+                console.error('[AppContext] Seek error:', error);
+            }
+        } else {
+            console.warn('[AppContext] Player reference not found or invalid');
+            if (!player) console.warn('[AppContext] player is null');
+            else console.warn(`[AppContext] seekTo is not a function (type: ${typeof player.seekTo})`);
         }
     }, []);
 
