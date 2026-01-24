@@ -1,132 +1,74 @@
 """
 API routes for the YouTube Summarizer application.
-Handles transcript generation, summarization, and hybrid outputs.
-
-Refactored to use:
-- Custom exception hierarchy (Fail Fast, EAFP)
-- Data models for validation (DRY, SRP)
-- Middleware for error handling (SoC)
+Handles transcript generation, summarization, and hybrid outputs using Controllers.
+KISS: Routes serve as a thin layer to dispatch requests to Controllers.
 """
-import time
-import os
-import subprocess
 from io import BytesIO
+import time
 from datetime import datetime
 from flask import Blueprint, request, send_file
 
-from app.config import config
 from app.utils.logger import logger
 from app.utils.responses import success_response, error_response, validation_error_response
 from app.exceptions import ValidationError, TranscriptError, SummarizationError
 from app.middleware.auth import require_api_key
 from app.middleware.rate_limiter import rate_limit
+from app.models import TranscriptRequest
+from app.controllers import HealthController, TranscriptController, SummaryController
 from app.validators import (
     validate_youtube_url,
     validate_transcript_file,
     validate_summary_type,
     validate_output_format
 )
-from app.services.youtube_service import (
-    get_transcript,
-    extract_video_id,
-    get_video_title,
-    get_diarized_transcript
-)
-from app.services.summarization_service import (
-    summarize_with_perplexity,
-    summarize_with_gemini
-)
-from app.services.pdf_service import create_pdf_summary, create_hybrid_pdf
-from app.utils.parsers import parse_transcript_file
 from app.constants import (
     ERROR_NO_URL,
     ERROR_NO_FILE,
     ERROR_NO_URL_OR_FILE,
-    ERROR_TRANSCRIPT_FAILED,
-    ERROR_SUMMARIZATION_FAILED,
     SUCCESS_TRANSCRIPT_READY,
     RATE_LIMIT_REQUESTS,
     RATE_LIMIT_WINDOW
 )
+from app.utils.parsers import parse_transcript_file
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
-
 # ============================================================================
-# Health & Debug Endpoints
+# Health
 # ============================================================================
 
 @bp.route('/health', methods=['GET'])
 def health():
-    """
-    Health check endpoint.
-    
-    Refactored to use controller pattern:
-    - Route handles HTTP concerns only
-    - Controller handles business logic
-    - Clean separation (SoC)
-    """
-    from app.controllers import HealthController
-    from app.utils.responses import success_response
-    
+    """Health check endpoint."""
     controller = HealthController()
-    health_data = controller.get_health_status()
-    
-    return success_response(health_data)
-
-
-# Debug endpoint removed for production security
-# Critical Vulnerability #3 - Sensitive Information Exposure
+    return success_response(controller.get_health_status())
 
 
 # ============================================================================
-# Transcript Endpoints
+# Transcript
 # ============================================================================
 
 @bp.route('/transcript', methods=['POST'])
 @require_api_key
 @rate_limit(max_requests=RATE_LIMIT_REQUESTS, window_seconds=RATE_LIMIT_WINDOW)
 def get_transcript_only():
-    """
-    Generate transcript only (without summarization).
-    
-    Refactored with controller pattern:
-    - Route: HTTP handling (request parsing, response formatting)
-    - Controller: Business logic (orchestration)
-    - Services: Domain logic (YouTube API, Whisper)
-    
-    This demonstrates:
-    - SRP: Each layer has one responsibility
-    - TDA: Route tells controller what to do
-    - SoC: Clear separation of concerns
-    """
-    from app.controllers import TranscriptController
-    from app.models import TranscriptRequest
-    from app.utils.responses import success_response
-    from app.constants import SUCCESS_TRANSCRIPT_READY
-    
-    # EAFP: Try to process, handle errors if they occur
+    """Generate transcript only."""
     try:
-        # Parse request
         data = request.get_json()
         if not data:
             raise ValidationError('body', 'Invalid JSON')
         
-        # Validate (Fail Fast in __post_init__)
         request_data = TranscriptRequest(**data)
         
-        # Tell controller to generate transcript (TDA)
         controller = TranscriptController()
         response = controller.generate_transcript(request_data)
         
-        # Return response
         return success_response(response.to_dict(), message=SUCCESS_TRANSCRIPT_READY)
     
     except (ValidationError, TranscriptError):
-        # Re-raise for error middleware to handle
         raise
     except Exception as e:
-        logger.error(f"Transcript endpoint error: {str(e)}")
+        logger.error(f"Transcript endpoint error: {e}")
         raise TranscriptError(str(e))
 
 
@@ -134,141 +76,27 @@ def get_transcript_only():
 def validate_transcript():
     """Validate uploaded transcript file."""
     try:
-        logger.info(">>> ENDPOINT: /api/upload-transcript <<<")
-
         if 'file' not in request.files:
             return error_response(ERROR_NO_FILE)
 
         file = request.files['file']
-
-        # Validate file
         is_valid, error_msg = validate_transcript_file(file)
         if not is_valid:
             return validation_error_response('file', error_msg)
 
-        logger.info(f"[PROCESS] Validating file: {file.filename}")
-
-        # Read and validate content
         content = file.read().decode('utf-8')
-        file_size = len(content)
-        word_count = len(content.split())
-
-        logger.info("[OK] File validated")
-        logger.info(f"[STATS] Size: {file_size} characters | Words: {word_count}")
-
-        preview = content[:200] + '...' if len(content) > 200 else content
-
-        return success_response({
-            'filename': file.filename,
-            'size': file_size,
-            'words': word_count,
-            'preview': preview
-        })
+        controller = TranscriptController()
+        result = controller.validate_transcript_file(content, file.filename)
+        
+        return success_response(result)
 
     except Exception as e:
-        logger.error(f"Upload validation error: {str(e)}")
+        logger.error(f"Upload validation error: {e}")
         return error_response(str(e), status_code=500)
 
 
 # ============================================================================
-# Helper Functions for Summarization
-# ============================================================================
-
-def _get_transcript_from_request():
-    """Extract transcript from request (either from URL or file upload)."""
-    # Handle JSON requests
-    if request.is_json:
-        data = request.json
-        video_url = data.get('url', '').strip()
-        summary_type = data.get('type', 'normal')
-        output_format = data.get('format', 'pdf')
-        transcript_file = None
-
-    # Handle form data (file upload)
-    else:
-        video_url = request.form.get('url', '').strip()
-        summary_type = request.form.get('type', 'normal')
-        output_format = request.form.get('format', 'pdf')
-        transcript_file = request.files.get('transcript_file')
-
-    # Validate and normalize
-    summary_type = validate_summary_type(summary_type)
-    output_format = validate_output_format(output_format)
-
-    # Option 1: File upload
-    if transcript_file:
-        logger.info(">>> ENDPOINT: /api/summarize (FILE UPLOAD MODE) <<<")
-
-        is_valid, error_msg = validate_transcript_file(transcript_file)
-        if not is_valid:
-            return None, None, None, None, error_msg
-
-        try:
-            content = transcript_file.read().decode('utf-8')
-            transcript = parse_transcript_file(content)
-            source = "file_upload"
-            video_id = 'manual_upload'
-            title = transcript_file.filename.replace('.txt', '')
-
-            logger.info(f"[OK] Transcript extracted ({len(transcript)} chars)")
-            return transcript, source, video_id, title, None
-
-        except Exception as e:
-            return None, None, None, None, f'Could not read file: {e}'
-
-    # Option 2: Video URL
-    elif video_url:
-        logger.info(">>> ENDPOINT: /api/summarize (VIDEO URL MODE) <<<")
-        logger.info(f"Video: {video_url} | Type: {summary_type} | Format: {output_format}")
-
-        is_valid, error_msg = validate_youtube_url(video_url)
-        if not is_valid:
-            return None, None, None, None, error_msg
-
-        transcript, source = get_transcript(video_url)
-
-        if not transcript:
-            logger.error(f"Summarize: Transcript failed - {source}")
-            return None, None, None, None, source or ERROR_TRANSCRIPT_FAILED
-
-        video_id = extract_video_id(video_url)
-        title = get_video_title(video_url) or f'Video {video_id}'
-
-        logger.info(f"Transcript ready ({len(transcript)} chars)")
-        return transcript, source, video_id, title, None
-
-    # No transcript or URL provided
-    else:
-        return None, None, None, None, ERROR_NO_URL_OR_FILE
-
-
-def _generate_summary(transcript: str, summary_type: str) -> tuple[str, str]:
-    """Generate summary using configured AI service."""
-    logger.info(f"[START] Summarization process ({summary_type} mode)")
-
-    summary = None
-
-    if config.use_perplexity:
-        logger.info("Using Perplexity API...")
-        summary = summarize_with_perplexity(transcript, summary_type)
-
-        if not summary and config.google_api_key:
-            logger.warning("Perplexity failed, trying Gemini...")
-            summary = summarize_with_gemini(transcript, summary_type)
-    else:
-        logger.info("Using Gemini API...")
-        summary = summarize_with_gemini(transcript, summary_type)
-
-    if not summary:
-        logger.error("All summarization APIs failed")
-        return None, ERROR_SUMMARIZATION_FAILED
-
-    logger.info(f"[OK] Summary generated ({len(summary)} characters)")
-    return summary, None
-
-
-# ============================================================================
-# Summarization Endpoints
+# Summarize
 # ============================================================================
 
 @bp.route('/summarize', methods=['POST'])
@@ -278,50 +106,70 @@ def summarize_transcript():
     """Summarize transcript from video URL or uploaded file."""
     try:
         start_time = time.time()
-
-        # Get summary type and output format
+        
+        # 1. Parse Input
         if request.is_json:
-            summary_type = validate_summary_type(request.json.get('type'))
-            output_format = validate_output_format(request.json.get('format'))
-            video_url = request.json.get('url', '').strip()
+            data = request.json
+            summary_type = validate_summary_type(data.get('type'))
+            output_format = validate_output_format(data.get('format'))
+            video_url = data.get('url', '').strip()
+            transcript_file = None
         else:
             summary_type = validate_summary_type(request.form.get('type'))
             output_format = validate_output_format(request.form.get('format'))
             video_url = request.form.get('url', '').strip()
+            transcript_file = request.files.get('transcript_file')
 
-        # Get transcript
-        transcript, source, video_id, title, error = _get_transcript_from_request()
-        if error:
-            return error_response(error)
+        controller = SummaryController()
+        
+        # 2. Get Transcript
+        transcript = None
+        source = 'unknown'
+        title = 'Summary'
+        video_id = 'unknown'
 
-        # Generate summary
-        summary, error = _generate_summary(transcript, summary_type)
-        if error:
-            return error_response(error, status_code=500)
+        if transcript_file:
+            # File Upload Mode
+            is_valid, error_msg = validate_transcript_file(transcript_file)
+            if not is_valid:
+                return validation_error_response('file', error_msg)
+            
+            content = transcript_file.read().decode('utf-8')
+            transcript = parse_transcript_file(content)
+            source = "file_upload"
+            video_id = 'manual_upload'
+            title = transcript_file.filename.replace('.txt', '')
+            
+        elif video_url:
+            # URL Mode
+            is_valid, error_msg = validate_youtube_url(video_url)
+            if not is_valid:
+                return validation_error_response('url', error_msg)
+                
+            transcript, source, video_id, title = controller.get_transcript_for_url(video_url)
+            
+        else:
+            return error_response(ERROR_NO_URL_OR_FILE)
 
-        # Generate output based on format
+        # 3. Generate Summary
+        summary = controller.generate_summary(transcript, summary_type)
+
+        # 4. Generate Output (PDF/TXT)
+        elapsed_time = time.time() - start_time
+        logger.info(f"[COMPLETE] Summary ready ({elapsed_time:.1f}s total)")
+
         if output_format == 'pdf':
-            logger.info("[EXPORT] Creating PDF...")
-            pdf_buffer = create_pdf_summary(
-                title, summary, video_url or 'Manual Upload',
-                source, summary_type
+            pdf_buffer = controller.create_pdf(
+                title, summary, video_url or 'Manual Upload', source, summary_type
             )
-
-            elapsed_time = time.time() - start_time
-            logger.info(
-                f"[COMPLETE] Summary PDF ready for download "
-                f"({elapsed_time:.1f}s total)"
-            )
-
             return send_file(
                 pdf_buffer,
                 mimetype='application/pdf',
                 as_attachment=True,
                 download_name=f'summary_{video_id}_{summary_type}.pdf'
             )
-
-        else:  # txt format
-            logger.info("[EXPORT] Creating TXT...")
+        else:
+            # TXT output
             content = f"""SUMMARY - {summary_type.upper()}
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 Source: {source.upper()}
@@ -335,16 +183,7 @@ Source: {source.upper()}
 
 Generated by YouTube Summarizer
 """
-            buffer = BytesIO()
-            buffer.write(content.encode('utf-8'))
-            buffer.seek(0)
-
-            elapsed_time = time.time() - start_time
-            logger.info(
-                f"[COMPLETE] Summary TXT ready for download "
-                f"({elapsed_time:.1f}s total)"
-            )
-
+            buffer = BytesIO(content.encode('utf-8'))
             return send_file(
                 buffer,
                 mimetype='text/plain',
@@ -352,8 +191,12 @@ Generated by YouTube Summarizer
                 download_name=f'summary_{video_id}_{summary_type}.txt'
             )
 
+    except ValidationError as e:
+        return validation_error_response(e.field, e.message)
+    except (TranscriptError, SummarizationError) as e:
+        return error_response(str(e))
     except Exception as e:
-        logger.error(f"Summarize endpoint error: {str(e)}")
+        logger.error(f"Summarize endpoint error: {e}")
         import traceback
         logger.error(f"[TRACEBACK]\n{traceback.format_exc()}")
         return error_response(str(e), status_code=500)
@@ -379,25 +222,17 @@ def hybrid_output():
         if not is_valid:
             return validation_error_response('url', error_msg)
 
-        logger.info(">>> ENDPOINT: /api/hybrid <<<")
-        logger.info(f"Video: {video_url} | Type: {summary_type}")
+        controller = SummaryController()
 
-        # Get transcript
-        transcript, source = get_transcript(video_url)
-        if not transcript:
-            logger.error(f"Hybrid: Transcript failed - {source}")
-            return error_response(source or ERROR_TRANSCRIPT_FAILED)
+        # Get Transcript
+        transcript, source, video_id, title_fetched = controller.get_transcript_for_url(video_url)
+        title = data.get('title', title_fetched)
 
-        logger.info(f"Transcript ready ({len(transcript)} chars)")
+        # Generate Summary
+        summary = controller.generate_summary(transcript, summary_type)
 
-        # Generate summary
-        summary, error = _generate_summary(transcript, summary_type)
-        if error:
-            return error_response(error, status_code=500)
-
-        # Create hybrid PDF
-        title = data.get('title', f'Video {extract_video_id(video_url)}')
-        pdf_buffer = create_hybrid_pdf(
+        # Create PDF
+        pdf_buffer = controller.create_hybrid_pdf(
             title, summary, transcript, video_url, source, summary_type
         )
 
@@ -405,9 +240,9 @@ def hybrid_output():
             pdf_buffer,
             mimetype='application/pdf',
             as_attachment=True,
-            download_name=f'hybrid_{extract_video_id(video_url)}.pdf'
+            download_name=f'hybrid_{video_id}.pdf'
         )
 
     except Exception as e:
-        logger.error(f"Hybrid endpoint error: {str(e)}")
+        logger.error(f"Hybrid endpoint error: {e}")
         return error_response(str(e), status_code=500)
