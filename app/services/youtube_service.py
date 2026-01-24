@@ -308,14 +308,6 @@ def get_diarized_transcript(video_url: str) -> Tuple[Optional[str], str]:
             title=title, 
             duration=duration_str
         )
-
-        # Cleanup audio file
-        if os.path.exists(audio_path):
-            try:
-                os.remove(audio_path)
-            except Exception as cleanup_e:
-                logger.warning(f"Failed to clean up audio file: {cleanup_e}")
-
         return transcript, source
 
     except Exception as e:
@@ -323,6 +315,15 @@ def get_diarized_transcript(video_url: str) -> Tuple[Optional[str], str]:
         import traceback
         logger.error(traceback.format_exc())
         return None, str(e)
+
+    finally:
+        # Cleanup audio file - Always run (Fix for Local File Leak)
+        if os.path.exists(audio_path):
+            try:
+                os.remove(audio_path)
+                logger.info(f"[CLEANUP] Deleted temp audio: {audio_path}")
+            except Exception as cleanup_e:
+                logger.warning(f"Failed to clean up audio file: {cleanup_e}")
 
 
 def get_transcript(video_url: str) -> Tuple[Optional[str], str]:
@@ -349,6 +350,7 @@ def get_transcript(video_url: str) -> Tuple[Optional[str], str]:
         return transcript, source
 
     # Fallback to Whisper
+    # Fallback to Whisper
     logger.info("Falling back to Whisper...")
     audio_path = download_audio_from_youtube(video_url)
     if not audio_path:
@@ -358,16 +360,22 @@ def get_transcript(video_url: str) -> Tuple[Optional[str], str]:
     try:
         transcript = transcribe_with_whisper(audio_path)
 
-        # Cleanup
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
-
         if transcript:
             logger.info("Using Whisper transcript source")
             return transcript, "whisper"
+            
+        logger.error("Whisper returned empty transcript")
+        return None, "Failed to transcribe audio (Empty)"
 
     except Exception as e:
         logger.error(f"Whisper transcription failed: {str(e)}")
+        return None, f"Whisper failed: {str(e)}"
 
-    logger.error("Both YouTube and Whisper failed")
-    return None, "Failed to transcribe audio"
+    finally:
+        # Cleanup - Always run (Fix for Local File Leak)
+        if os.path.exists(audio_path):
+            try:
+                os.remove(audio_path)
+                logger.info(f"[CLEANUP] Deleted temp audio: {audio_path}")
+            except Exception as cleanup_e:
+                logger.warning(f"Failed to clean up audio file: {cleanup_e}")
