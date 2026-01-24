@@ -37,7 +37,11 @@ export const useYouTubePlayer = (videoId, onDurationChange, externalPlayerRef = 
     useEffect(() => {
         if (!videoId) return;
 
+        let isMounted = true;
+
         const initPlayer = () => {
+            if (!isMounted) return;
+
             if (!window.YT || !window.YT.Player) {
                 // API not ready yet, wait for it
                 setTimeout(initPlayer, 100);
@@ -65,6 +69,8 @@ export const useYouTubePlayer = (videoId, onDurationChange, externalPlayerRef = 
         };
 
         const handlePlayerReady = (event) => {
+            if (!isMounted) return;
+
             if (videoId) {
                 // Ensure target has the method before calling it
                 if (event.target && typeof event.target.loadVideoById === 'function') {
@@ -73,11 +79,17 @@ export const useYouTubePlayer = (videoId, onDurationChange, externalPlayerRef = 
 
                 // Get duration after brief delay to ensure metadata is loaded
                 setTimeout(() => {
+                    if (!isMounted) return;
+
                     // Safety check: ensure target still exists and has getDuration
                     if (event.target && typeof event.target.getDuration === 'function') {
-                        const duration = event.target.getDuration();
-                        if (duration && onDurationChange) {
-                            onDurationChange(duration);
+                        try {
+                            const duration = event.target.getDuration();
+                            if (duration && onDurationChange) {
+                                onDurationChange(duration);
+                            }
+                        } catch (e) {
+                            console.warn("Error getting duration:", e);
                         }
                     }
                 }, YOUTUBE_PLAYER.DURATION_CHECK_DELAY);
@@ -85,14 +97,20 @@ export const useYouTubePlayer = (videoId, onDurationChange, externalPlayerRef = 
         };
 
         const handlePlayerStateChange = (event) => {
+            if (!isMounted) return;
+
             // Update duration when video is playing or cued
             const { PLAYING, CUED } = YOUTUBE_API.PLAYER_STATES;
             if (event.data === PLAYING || event.data === CUED) {
                 // Safety check
                 if (event.target && typeof event.target.getDuration === 'function') {
-                    const duration = event.target.getDuration();
-                    if (duration && onDurationChange) {
-                        onDurationChange(duration);
+                    try {
+                        const duration = event.target.getDuration();
+                        if (duration && onDurationChange) {
+                            onDurationChange(duration);
+                        }
+                    } catch (e) {
+                        console.warn("Error getting duration in state change:", e);
                     }
                 }
             }
@@ -102,6 +120,7 @@ export const useYouTubePlayer = (videoId, onDurationChange, externalPlayerRef = 
 
         // Cleanup on unmount
         return () => {
+            isMounted = false;
             if (playerRef.current && playerRef.current.destroy) {
                 playerRef.current.destroy();
                 playerRef.current = null;
