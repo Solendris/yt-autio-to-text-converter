@@ -11,11 +11,7 @@ from app.constants import (
     ERROR_INVALID_URL,
     ERROR_INVALID_FILE_TYPE,
     ERROR_FILE_TOO_LARGE,
-    ERROR_EMPTY_FILENAME,
-    VALID_SUMMARY_TYPES,
-    DEFAULT_SUMMARY_TYPE,
-    VALID_OUTPUT_FORMATS,
-    DEFAULT_OUTPUT_FORMAT
+    ERROR_EMPTY_FILENAME
 )
 
 
@@ -74,45 +70,6 @@ def validate_transcript_file(file) -> Tuple[bool, Optional[str]]:
 
     return True, None
 
-
-def validate_summary_type(summary_type: Optional[str]) -> str:
-    """
-    Validate and normalize summary type.
-
-    Args:
-        summary_type: The summary type to validate
-
-    Returns:
-        Valid summary type (normalized)
-    """
-    if not summary_type:
-        return DEFAULT_SUMMARY_TYPE
-
-    normalized = summary_type.lower().strip()
-    if normalized not in VALID_SUMMARY_TYPES:
-        return DEFAULT_SUMMARY_TYPE
-
-    return normalized
-
-
-def validate_output_format(output_format: Optional[str]) -> str:
-    """
-    Validate and normalize output format.
-
-    Args:
-        output_format: The output format to validate
-
-    Returns:
-        Valid output format (normalized)
-    """
-    if not output_format:
-        return DEFAULT_OUTPUT_FORMAT
-
-    normalized = output_format.lower().strip()
-    if normalized not in VALID_OUTPUT_FORMATS:
-        return DEFAULT_OUTPUT_FORMAT
-
-    return normalized
 
 
 def sanitize_filename(filename: str) -> str:

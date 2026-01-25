@@ -60,84 +60,6 @@ class TranscriptRequest:
         return extract_video_id(self.url)
 
 
-@dataclass
-class SummarizeRequest:
-    """
-    Request model for summarization.
-    
-    Supports both URL-based and file upload-based summarization.
-    """
-    
-    url: Optional[str] = None
-    summary_type: str = 'normal'
-    output_format: str = 'pdf'
-    transcript_text: Optional[str] = None
-    filename: Optional[str] = None
-    
-    def __post_init__(self):
-        """Validate and normalize request data."""
-        # Normalize summary type
-        from app.validators import validate_summary_type, validate_output_format
-        self.summary_type = validate_summary_type(self.summary_type)
-        self.output_format = validate_output_format(self.output_format)
-        
-        # Validate that we have either URL or transcript
-        if not self.url and not self.transcript_text:
-            raise ValidationError(
-                'request',
-                'Either URL or transcript text must be provided'
-            )
-        
-        # If URL provided, validate it
-        if self.url:
-            self.url = self.url.strip()
-            from app.validators import validate_youtube_url
-            is_valid, error_msg = validate_youtube_url(self.url)
-            if not is_valid:
-                raise ValidationError('url', error_msg)
-    
-    @property
-    def video_id(self) -> str:
-        """Extract video ID or return default for file uploads."""
-        if self.url:
-            from app.services.youtube_service import extract_video_id
-            return extract_video_id(self.url) or 'unknown'
-        return 'manual_upload'
-    
-    @property
-    def is_file_upload(self) -> bool:
-        """Check if this is a file upload request."""
-        return self.transcript_text is not None and not self.url
-
-
-@dataclass
-class HybridRequest:
-    """Request model for hybrid PDF generation (summary + transcript)."""
-    
-    url: str
-    summary_type: str = 'normal'
-    title: Optional[str] = None
-    
-    def __post_init__(self):
-        """Validate request data."""
-        self.url = self.url.strip()
-        
-        if not self.url:
-            raise ValidationError('url', 'URL is required')
-        
-        from app.validators import validate_youtube_url, validate_summary_type
-        is_valid, error_msg = validate_youtube_url(self.url)
-        if not is_valid:
-            raise ValidationError('url', error_msg)
-        
-        self.summary_type = validate_summary_type(self.summary_type)
-    
-    @property
-    def video_id(self) -> Optional[str]:
-        """Extract video ID from URL."""
-        from app.services.youtube_service import extract_video_id
-        return extract_video_id(self.url)
-
 
 @dataclass
 class TranscriptResponse:
@@ -168,7 +90,6 @@ class HealthResponse:
     
     version: str
     sections: list
-    perplexity_configured: bool
     gemini_configured: bool
     ai_provider: str
     
@@ -177,7 +98,6 @@ class HealthResponse:
         return {
             'version': self.version,
             'sections': self.sections,
-            'perplexity_configured': self.perplexity_configured,
             'gemini_configured': self.gemini_configured,
             'ai_provider': self.ai_provider
         }

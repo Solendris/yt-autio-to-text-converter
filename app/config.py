@@ -46,8 +46,7 @@ class Config:
     will prevent the application from starting.
     
     Environment Variables:
-        PERPLEXITY_API_KEY: API key for Perplexity AI
-        GOOGLE_API_KEY: API key for Google Gemini
+        GOOGLE_API_KEY: API key for Google Gemini (required)
         API_TIMEOUT: Timeout for API requests (seconds)
         YOUTUBE_TIMEOUT: Timeout for YouTube operations (seconds)
         MAX_TEXT_LENGTH: Maximum text length for processing
@@ -55,7 +54,6 @@ class Config:
     """
     
     # API Keys
-    perplexity_api_key: str = field(default_factory=lambda: os.getenv('PERPLEXITY_API_KEY', '').strip())
     google_api_key: str = field(default_factory=lambda: os.getenv('GOOGLE_API_KEY', '').strip())
     api_key: str = field(default_factory=lambda: os.getenv('API_KEY', '').strip())
     
@@ -87,15 +85,14 @@ class Config:
     
     def _validate_api_keys(self):
         """
-        Ensure at least one AI provider is configured and API key for authentication.
+        Ensure Google/Gemini API is configured and API key for authentication.
         
         Raises:
-            ConfigurationError: If no API keys are configured
+            ConfigurationError: If API keys are not configured
         """
-        if not self.perplexity_api_key and not self.google_api_key:
+        if not self.google_api_key:
             raise ConfigurationError(
-                "At least one AI provider API key must be configured: "
-                "GOOGLE_API_KEY or PERPLEXITY_API_KEY"
+                "GOOGLE_API_KEY must be configured for Gemini AI"
             )
         
         if not self.api_key:
@@ -145,30 +142,9 @@ class Config:
             )
     
     @property
-    def use_perplexity(self) -> bool:
-        """Check if Perplexity AI is configured."""
-        return bool(self.perplexity_api_key)
-    
-    @property
     def ai_provider(self) -> str:
-        """Get the primary AI provider name."""
-        return 'perplexity' if self.use_perplexity else 'gemini'
-    
-    def get_api_key(self, provider: str) -> Optional[str]:
-        """
-        Get API key for specified provider.
-        
-        Args:
-            provider: Provider name ('perplexity' or 'gemini')
-            
-        Returns:
-            API key or None if not configured
-        """
-        if provider == 'perplexity':
-            return self.perplexity_api_key or None
-        elif provider in ('gemini', 'google'):
-            return self.google_api_key or None
-        return None
+        """Get the AI provider name."""
+        return 'gemini'
     
     def to_dict(self) -> dict:
         """
@@ -177,7 +153,6 @@ class Config:
         Note: API keys are masked for security.
         """
         return {
-            'perplexity_configured': bool(self.perplexity_api_key),
             'google_configured': bool(self.google_api_key),
             'api_timeout': self.api_timeout,
             'youtube_timeout': self.youtube_timeout,

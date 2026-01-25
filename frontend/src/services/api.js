@@ -66,74 +66,6 @@ export const api = {
     },
 
     /**
-     * Generate summary for a video or file
-     * @param {Object} options - { url, type, format, file }
-     */
-    async generateSummary({ url, type = 'normal', format = 'pdf', file = null }) {
-        let response;
-
-        if (file) {
-            // Multipart upload
-            const formData = new FormData();
-            formData.append('transcript_file', file);
-            formData.append('type', type);
-            formData.append('format', format);
-            if (url) formData.append('url', url);
-
-            response = await fetch(`${API_BASE}/summarize`, {
-                method: 'POST',
-                headers: COMMON_HEADERS,
-                body: formData
-            });
-        } else {
-            // JSON request
-            response = await fetch(`${API_BASE}/summarize`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...COMMON_HEADERS
-                },
-                body: JSON.stringify({ url, type, format })
-            });
-        }
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMessage = errorData.error || 'Failed to generate summary';
-            console.error(`[API] Summary generation failed: ${errorMessage}`, errorData);
-            throw new Error(errorMessage);
-        }
-
-        // Summary returns a BLOB (PDF/TXT)
-        return response.blob();
-    },
-
-    /**
-     * Generate hybrid PDF (Summary + Transcript)
-     * @param {string} url - YouTube video URL
-     * @param {string} type - Summary type (concise, normal, detailed)
-     */
-    async generateHybrid(url, type = 'normal') {
-        const response = await fetch(`${API_BASE}/hybrid`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...COMMON_HEADERS
-            },
-            body: JSON.stringify({ url, type })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMessage = errorData.error || 'Failed to generate hybrid PDF';
-            console.error(`[API] Hybrid generation failed: ${errorMessage}`, errorData);
-            throw new Error(errorMessage);
-        }
-
-        return response.blob();
-    },
-
-    /**
      * Validate an uploaded transcript file
      * @param {File} file - The .txt file
      */
@@ -157,3 +89,4 @@ export const api = {
         return response.json();
     }
 };
+
