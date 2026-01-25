@@ -111,6 +111,73 @@ POST /api/transcript
 
 Open `http://localhost:5173` and you should be good to go.
 
+## Deploying Backend to Raspberry Pi 5 (Docker)
+
+I run the backend on a Raspberry Pi 5 at home using Docker. Here's how I set it up:
+
+**1. Create a Dockerfile** (if not already present):
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY . .
+
+# Expose port
+EXPOSE 5000
+
+# Run with gunicorn for production
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "300", "app:app"]
+```
+
+**2. Build the image:**
+```bash
+docker build -t yt-transcript-backend .
+```
+
+**3. Run the container:**
+```bash
+docker run -d \
+  --name transcript-api \
+  -p 5000:5000 \
+  -e GOOGLE_API_KEY=your_key_here \
+  -e API_KEY=your_api_key_here \
+  --restart unless-stopped \
+  yt-transcript-backend
+```
+
+**4. Set up ngrok for secure external access:**
+
+For a stable and secure connection from the GitHub Pages frontend to my home Raspberry Pi, I use ngrok:
+
+```bash
+# Install ngrok (if not already installed)
+# Get your auth token from https://dashboard.ngrok.com/
+
+# Run ngrok to expose your backend
+ngrok http 5000
+```
+
+This gives you a public HTTPS URL (e.g., `https://abc123.ngrok.io`) that tunnels to your local backend. Update the frontend's `VITE_API_URL` to use this ngrok URL.
+
+**Benefits of using ngrok:**
+- Automatic HTTPS/SSL (no Let's Encrypt setup needed)
+- Stable connection even with dynamic home IP
+- Built-in request inspector for debugging
+- No need to configure router port forwarding
+
+This setup lets me access the API from anywhere (frontend on GitHub Pages → ngrok tunnel → backend on my home Pi 5). The Docker container automatically restarts if the Pi reboots.
+
 ## Things I learned
 
 **Architecture stuff:**
