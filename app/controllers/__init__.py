@@ -1,8 +1,8 @@
 """
-Controllers for handling business logic.
+Controllers package initialization.
+Exposes all controller classes for easy import.
 """
 from .health_controller import HealthController
 from .transcript_controller import TranscriptController
-from .summary_controller import SummaryController
 
-__all__ = ['HealthController', 'TranscriptController', 'SummaryController']
+__all__ = ['HealthController', 'TranscriptController']
