@@ -31,8 +31,12 @@ const UrlInput = () => {
                 value={localUrl}
                 onChange={(e) => setLocalUrl(e.target.value)}
             />
+            <p className="input-hint">
+                <span className="hint-icon">ℹ️</span> Maximum video duration: 90 minutes
+            </p>
         </div>
     );
 };
 
 export default React.memo(UrlInput);
+
