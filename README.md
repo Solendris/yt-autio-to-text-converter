@@ -1,103 +1,154 @@
-# YouTube Video Summarizer
+# YouTube Transcript Generator
 
-Zaawansowana aplikacja do automatycznego pobierania transkrypcji z YouTube, generowania profesjonalnych podsumowań przy użyciu AI (Perplexity/Gemini) i eksportu do estetycznych plików PDF.
+A web app I built for automatically transcribing YouTube videos. Originally started as a simple script, but I expanded it to practice full-stack development and working with AI APIs.
 
-## Kluczowe Funkcje
+[**Try it live here**](https://solendris.github.io/yt-autio-to-text-converter/)
 
-- **Dwa Niezależne Moduły**: Oddzielne sekcje do pobierania samego transkryptu (TXT) i generowania podsumowań.
-- **Dual AI Engine**:
-  - **Perplexity AI** (Sonar Pro): Domyślny, wysokiej jakości model do analizy.
-  - **Google Gemini**: Automatyczny fallback w przypadku problemów z Perplexity.
-- **Profesjonalne PDF**:
-  - **Pełne wsparcie dla języka polskiego** (czcionka Lato).
-  - **Formatowanie Markdown**: Pogrubienia, listy wypunktowane, nagłówki.
-  - **Metadane**: Prawdziwy tytuł wideo w dokumencie (zamiast URL).
-- **Tryb Hybrydowy**: Generowanie jednego pliku PDF zawierającego zarówno podsumowanie, jak i pełny transkrypt.
-- **Inteligentne Pobieranie**:
-  - Automatyczne wykrywanie napisów (YouTube API).
-  - Fallback do **Whisper** (mowa na tekst) jeśli napisy nie są dostępne.
+## What it does
 
-## Wymagania
+The app takes a YouTube URL and generates a text transcript. It's smarter than it sounds - it tries multiple approaches:
 
-- System: Windows / macOS / Linux
-- Python 3.8+
-- [FFmpeg](https://ffmpeg.org/) (wymagany do działania Whisper)
-- Klucze API:
-  - **Perplexity AI** (wymagany do działania domyślnego)
-  - **Google Gemini** (opcjonalny, jako zapasowy)
+1. First checks if YouTube has captions available (fastest)
+2. If not, downloads the audio and uses Whisper to transcribe
+3. For speaker diarization (identifying who's talking), it uses Google's Gemini API
 
-## Instalacja i Konfiguracja
+I also added a 90-minute limit because longer videos take forever to process.
 
-### 1. Pobierz projekt
-Pobierz kod źródłowy i rozpakuj w wybranym folderze.
+## Why I built this
 
-### 2. Utwórz środowisko (opcjonalne, ale zalecane)
-```bash
-python -m venv venv
-venv\Scripts\activate  # Windows
+I wanted to learn:
+- How to structure a proper REST API (not just throw everything in one file)
+- Frontend-backend communication and state management
+- Working with third-party APIs (YouTube, Google Gemini)
+- Handling file uploads and audio processing
+- Security basics (CORS, input validation, etc.)
+
+The codebase evolved a lot - I refactored it several times as I learned better patterns. Initially had Perplexity integration for summarization, but I removed it to keep things focused.
+
+## Tech stack
+
+**Backend:**
+- Flask for the API
+- yt-dlp for downloading videos
+- Faster-Whisper for local transcription
+- Google Gemini API for speaker detection
+
+**Frontend:**
+- React (chose it because most jobs seem to want it)
+- Vite (way faster than create-react-app)
+- Context API for state (kept it simple, didn't need Redux)
+
+## Project structure
+
+I tried to keep things organized:
+
+```
+app/
+├── routes.py           # API endpoints
+├── config.py           # Environment variables and settings
+├── controllers/        # Business logic (separate from routes)
+├── services/           # External integrations (YouTube, Gemini, etc.)
+├── utils/              # Helper functions
+└── middleware/         # Error handling, CORS
 ```
 
-### 3. Zainstaluj zależności
-```bash
-pip install -r requirements.txt
+Nothing crazy, just trying to follow separation of concerns. Controllers handle the business logic, services deal with external APIs, routes just route.
+
+## API Endpoints
+
+Pretty straightforward:
+
 ```
-*Uwaga: Pierwsza instalacja `faster-whisper` może chwilę potrwać.*
-
-### 4. Skonfiguruj klucze API
-Utwórz plik `.env` w głównym katalogu (obok `run.py`) i wklej swoje klucze:
-```ini
-PERPLEXITY_API_KEY=pplx-xxxxxxxxxxxxxxxxxxxxx
-GOOGLE_API_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxx  # Opcjonalnie
+GET  /api/health              # Checks if everything's configured
+POST /api/transcript          # Main endpoint - transcribes a video
+POST /api/upload-transcript   # Validates uploaded .txt files
 ```
 
-## Uruchamianie
+Example request:
+```json
+POST /api/transcript
+{
+  "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  "diarization": true  // set to true if you want speaker labels
+}
+```
 
-Aplikacja składa się z dwóch części: Backend (Flask) oraz Frontend (React).
+## Running it locally
 
-### Metoda automatyczna (Windows)
-Uruchom plik **`start.bat`**.
-*Skrypt automatycznie otworzy dwa okna: jedno dla serwera Flask (port 5000) i drugie dla Vite/React (port 5173).*
+**You'll need:**
+- Python 3.8+ 
+- Node.js (for the frontend)
+- FFmpeg (Whisper needs it for audio)
+- A Google API key ([get one here](https://makersuite.google.com/app/apikey))
 
-### Metoda ręczna
-1. **Backend**:
+**Setup:**
+
+1. Clone the repo and install Python dependencies:
+   ```bash
+   cd local
+   python -m venv venv
+   venv\Scripts\activate  # on Windows
+   pip install -r requirements.txt
+   ```
+
+2. Create a `.env` file with your API key:
+   ```
+   GOOGLE_API_KEY=your_actual_key_here
+   API_KEY=any_string_for_basic_auth
+   ```
+
+3. Run the backend:
    ```bash
    python run.py
    ```
-2. **Frontend**:
+
+4. In another terminal, run the frontend:
    ```bash
    cd frontend
-   npm install  # tylko przy pierwszym uruchomieniu
+   npm install
    npm run dev
    ```
 
-Aplikacja będzie dostępna pod adresem: **http://localhost:5173** (Vite obsługuje komunikację z backendem przez proxy).
+Open `http://localhost:5173` and you should be good to go.
 
-## Instrukcja Obsługi
+## Things I learned
 
-### Sekcja 1: Pobierz Transkrypt
-1. Wklej link do wideo YouTube.
-2. Kliknij **Generate Transcript**.
-3. Pobierz surowy plik `.txt`.
+**Architecture stuff:**
+- How to properly structure a Flask app (not just one massive file)
+- Dependency injection makes testing easier
+- Config validation should happen at startup, not when things break
 
-### Sekcja 2: Generuj Podsumowanie
-1. Wybierz źródło: **From Video** (URL) lub **From File** (wgraj swój .txt).
-2. Wybierz typ podsumowania:
-   - **Concise**: Krótka esencja (3-5 zdań).
-   - **Normal**: Standardowe podsumowanie (kluczowe punkty, wnioski).
-   - **Detailed**: Bardzo szczegółowe opracowanie (analiza tematyczna, bez zbędnych wstępów).
-3. Kliknij **Generate Summary**.
-4. Gotowy PDF (lub TXT) pobierze się automatycznie.
+**Security:**
+- CORS is annoying but important
+- Never trust user input - validate everything
+- Environment variables for secrets (learned this the hard way)
 
-### Sekcja Hybrydowa
-1. Wklej link URL.
-2. Kliknij **Generate Hybrid PDF**.
-3. Otrzymasz dokument zawierający na początku podsumowanie, a na kolejnych stronach pełny transkrypt.
+**Challenges:**
+- Speaker diarization was harder than expected - Gemini's API has quirks
+- Audio processing can eat up memory fast
+- Error handling needs to be comprehensive or users get confused
 
-## Rozwiązywanie Problemów
+## Known limitations
 
-- **Błąd "FFmpeg not found"**: Upewnij się, że FFmpeg jest zainstalowany i dodany do zmiennej środowiskowej PATH.
-- **Czarne kwadraty zamiast polskich znaków**: Zostało to naprawione w tej wersji dzięki czcionce Lato. Jeśli problem występuje, upewnij się, że folder `app/static/fonts` zawiera pliki `.ttf`.
-- **Timeout przy długich wideo**: Dla bardzo długich materiałów (>1h) proces może trwać dłużej niż 120s. Spróbuj użyć trybu "Concise" lub podzielić materiał.
+- Maximum 90 minutes per video (processing longer ones takes too long)
+- Speaker diarization isn't perfect - works best with 2-4 clear speakers
+- Only supports YouTube (could expand to other platforms later)
 
-## Licencja
-Projekt na użytek własny / edukacyjny.
+## What I'd improve
+
+If I had more time:
+- **Persistent transcripts with shareable links** - Generate a unique GUID for each transcript so you can bookmark/share it without re-processing the video every time. Would need a simple database (maybe SQLite) to store them.
+- **Transcript viewer page** - A dedicated page where you can paste a GUID or upload a previously generated .txt file and view it with the same nice formatting (timestamps, speaker labels, etc.) without hitting the API again.
+- Add proper testing (I have some basic tests but could use more)
+- Better progress indicators (right now it just says "loading")
+- Support for other video platforms
+- Caching for frequently accessed videos
+- More sophisticated error messages
+
+## License
+
+MIT License - feel free to use this however you want.
+
+---
+
+Built this to learn and practice. If you're looking at this for a job application, the code's on GitHub if you want to see how it's actually implemented.
