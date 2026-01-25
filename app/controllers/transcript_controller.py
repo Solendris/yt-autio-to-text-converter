@@ -26,12 +26,15 @@ class TranscriptController:
         if not transcript:
             raise TranscriptError(source or "Transcript generation failed", source)
         
+        video_id = self.youtube_service.extract_video_id(request_data.url) or 'unknown'
+        
         return TranscriptResponse(
             transcript=transcript,
             source=source,
-            filename=f'transcript_{request_data.video_id}_{source}.txt',
-            video_id=request_data.video_id
+            filename=f'transcript_{video_id}_{source}.txt',
+            video_id=video_id
         )
+
 
     def validate_transcript_file(self, file_content: str, filename: str) -> Dict[str, Any]:
         """Validate uploaded transcript file."""

@@ -54,8 +54,9 @@ class Summarizer(ABC):
     """
     Abstract interface for text summarization providers.
     
-    Allows swapping between Gemini, Perplexity, or other AI services.
+    Allows swapping between different AI services (e.g., Gemini).
     """
+
     
     @abstractmethod
     def summarize(
@@ -84,9 +85,10 @@ class Summarizer(ABC):
         Get the name of this summarization provider.
         
         Returns:
-            Provider name (e.g., 'gemini', 'perplexity')
+            Provider name (e.g., 'gemini')
         """
         pass
+
     
     @abstractmethod
     def is_available(self) -> bool:

@@ -13,10 +13,10 @@ class HealthController:
         
         response = HealthResponse(
             version='2.0.0',
-            sections=['transcript', 'summarize'],
-            perplexity_configured=config.use_perplexity,
+            sections=['transcript'],
             gemini_configured=bool(config.google_api_key),
             ai_provider=config.ai_provider
         )
         
         return response.to_dict()
+

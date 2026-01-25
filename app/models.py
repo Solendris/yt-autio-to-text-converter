@@ -48,16 +48,6 @@ class TranscriptRequest:
         if not is_valid:
             raise ValidationError('url', error_msg)
     
-    @property
-    def video_id(self) -> Optional[str]:
-        """
-        Extract video ID from URL.
-        
-        This implements Law of Demeter - external code doesn't need
-        to know how to extract the ID, they just ask for it.
-        """
-        from app.services.youtube_service import extract_video_id
-        return extract_video_id(self.url)
 
 
 

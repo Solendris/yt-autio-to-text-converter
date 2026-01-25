@@ -75,9 +75,10 @@ def create_app(config_class=None):
         """Root endpoint - health check."""
         return {
             "status": "ok",
-            "message": "YouTube Summarizer Backend is running",
+            "message": "YouTube Transcript Backend is running",
             "version": "2.0.0"
         }
+
     
     # Add security headers to all responses
     @app.after_request
