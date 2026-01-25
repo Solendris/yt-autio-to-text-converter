@@ -35,7 +35,23 @@ YT_DLP_SOCKET_TIMEOUT = 60
 PREFERRED_AUDIO_CODEC = 'mp3'
 PREFERRED_AUDIO_QUALITY = '128'
 
+# Logging Configuration
+LOG_SEPARATOR = '=' * 80
+LOG_SECTION_SEPARATOR = '-' * 40
 
+# Cookie Configuration
+COOKIES_FILENAME = 'cookies.txt'
+
+# Error Messages
+ERROR_NO_FILE = 'No file provided'
+ERROR_INVALID_URL = 'Invalid YouTube URL'
+ERROR_INVALID_FILE_TYPE = 'Only .txt files allowed'
+ERROR_FILE_TOO_LARGE = 'File too large (max 5MB)'
+ERROR_EMPTY_FILENAME = 'Empty filename'
+ERROR_TRANSCRIPT_FAILED = 'Failed to generate transcript'
+
+# Success Messages
+SUCCESS_TRANSCRIPT_READY = 'Transcript ready'
 
 # Gemini Configuration
 GEMINI_MODEL = "gemini-3-flash-preview"
@@ -45,3 +61,4 @@ GEMINI_TEMPERATURE = 0.7
 SPEAKER_REGEX_PATTERN = r'^(\[\d{1,2}:\d{2}(?::\d{2})?\])\s*(Speaker \d+|[\w\s]+):(.*)'
 TIMESTAMP_PATTERN = r'\[\d{1,2}:\d{2}(?::\d{2})?\]'
 SEPARATOR_PATTERN = '=' * 20
+
