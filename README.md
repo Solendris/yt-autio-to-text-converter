@@ -1,4 +1,4 @@
-# YouTube Transcript Generator
+# YouTube AI Transcriber
 
 A web app I built for automatically transcribing YouTube videos. Originally started as a simple script, but I expanded it to practice full-stack development and working with AI APIs.
 
